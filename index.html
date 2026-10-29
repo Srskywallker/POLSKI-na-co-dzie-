@@ -156,7 +156,7 @@
   .semana i.on { background: var(--vermelho); }
   .semana i.hoje { outline: 2px solid var(--texto); outline-offset: 1px; }
   .trilha { display: grid; gap: 0; }
-  .parada { display: grid; grid-template-columns: 28px 36px 1fr auto; gap: 10px; align-items: start; position: relative; padding-bottom: 12px; }
+  .parada { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: start; position: relative; padding-bottom: 12px; }
   .parada:not(:last-child)::before { content: ""; position: absolute; left: 13px; top: 24px; bottom: -2px; width: 2px; background: #ecdfe2; }
   .parada.feita:not(:last-child)::before { background: var(--vermelho); }
   .parada .pto { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #d7c7cb; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--texto-2); position: relative; z-index: 1; }
@@ -167,6 +167,7 @@
   .parada.bloq b { color: var(--texto-2); }
   .ic-cidade { display: flex; }
   .ic-cidade svg { width: 100%; height: auto; }
+  .parada.com-ic { grid-template-columns: 28px 36px 1fr auto; }
   .parada .ic-cidade { width: 36px; margin-top: -4px; }
   .parada.bloq .ic-cidade { filter: grayscale(1); opacity: .4; }
   .festa .ic-cidade { width: 96px; }
@@ -1937,8 +1938,9 @@ function secRecompensas(sec) {
     return `${(() => { const L = infoNivel(), M = semanasComMedalha(), ult8 = M.lista.slice(-8);
       return `${sec !== "jornada" ? "" : `${cartaoJornada()}<div class="card plano"><div style="display:flex;justify-content:space-between;align-items:center"><span class="eyebrow">Jornada pela Polônia</span><span class="pill">${L.xp.toLocaleString("pt-BR")} XP</span></div>
       <div class="trilha">${ETAPAS.map((e,i) => { const feita = L.xp >= e.xp, atual = i === L.i;
-        return `<div class="parada ${feita?"feita":"bloq"} ${atual?"atual":""}"><span class="pto">${feita && !atual ? "✓" : i+1}</span>
-          ${iconeCidade(e.cidade)}<div><b>${esc(e.cidade)}</b>${atual || feita ? `<small>${esc(e.desc)}</small>` : ""}${atual && !L.extra ? `<div class="mini-barra" style="margin-top:6px"><i style="width:${L.pct}%"></i></div>` : ""}</div>
+        const ic = iconeCidade(e.cidade);
+        return `<div class="parada ${ic?"com-ic":""} ${feita?"feita":"bloq"} ${atual?"atual":""}"><span class="pto">${feita && !atual ? "✓" : i+1}</span>
+          ${ic}<div><b>${esc(e.cidade)}</b>${atual || feita ? `<small>${esc(e.desc)}</small>` : ""}${atual && !L.extra ? `<div class="mini-barra" style="margin-top:6px"><i style="width:${L.pct}%"></i></div>` : ""}</div>
           <span class="sub" style="font-size:12px;font-variant-numeric:tabular-nums">${e.xp.toLocaleString("pt-BR")} XP</span></div>`; }).join("")}</div>
       ${L.extra ? `<span class="sub" style="font-size:12.5px">Jornada completa! ${esc(L.titulo)}. Próxima estrela em ${(L.prox - L.xp).toLocaleString("pt-BR")} XP.</span>` : ""}
       </div>`}
