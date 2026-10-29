@@ -76,7 +76,7 @@ Neste protótipo, o progresso fica salvo no próprio navegador do aparelho. Ele 
 
 ## Exemplos com uma persona fictícia
 
-As frases de apresentação, a entrevista e os textos modelo usam uma persona inventada: **Lucas Kowalski**, de Curitiba, com família da região de Płock.
+As frases de apresentação, a entrevista e os textos modelo usam uma persona inventada: **Lucas Openchoski**, de Curitiba. A história dos antepassados é inspirada numa família real: Wincenty e Franciszek Opęchowski, da região de Ciechanów, que chegaram ao Brasil no navio Berlin em 1890. No Brasil, o sobrenome foi registrado com outra grafia.
 
 Nomes e sobrenomes poloneses aparecem sempre na grafia original, com todas as letras do polonês (Józef, Stanisław, Mikołaj Kopernik, Lech Wałęsa). Troque pelos seus dados ao treinar.
 
