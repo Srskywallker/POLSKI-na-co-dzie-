@@ -76,7 +76,9 @@ Neste protótipo, o progresso fica salvo no próprio navegador do aparelho. Ele 
 
 ## Exemplos com uma persona fictícia
 
-As frases de apresentação, a entrevista e os textos modelo usam uma persona inventada: **Lucas Kovalski**, de Curitiba, com família da região de Płock. Troque pelos seus dados ao treinar.
+As frases de apresentação, a entrevista e os textos modelo usam uma persona inventada: **Lucas Kowalski**, de Curitiba, com família da região de Płock.
+
+Nomes e sobrenomes poloneses aparecem sempre na grafia original, com todas as letras do polonês (Józef, Stanisław, Mikołaj Kopernik, Lech Wałęsa). Troque pelos seus dados ao treinar.
 
 ## Dar feedback
 
