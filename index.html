@@ -156,7 +156,7 @@
   .semana i.on { background: var(--vermelho); }
   .semana i.hoje { outline: 2px solid var(--texto); outline-offset: 1px; }
   .trilha { display: grid; gap: 0; }
-  .parada { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: start; position: relative; padding-bottom: 12px; }
+  .parada { display: grid; grid-template-columns: 28px 36px 1fr auto; gap: 10px; align-items: start; position: relative; padding-bottom: 12px; }
   .parada:not(:last-child)::before { content: ""; position: absolute; left: 13px; top: 24px; bottom: -2px; width: 2px; background: #ecdfe2; }
   .parada.feita:not(:last-child)::before { background: var(--vermelho); }
   .parada .pto { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #d7c7cb; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--texto-2); position: relative; z-index: 1; }
@@ -165,6 +165,12 @@
   .parada b { font-size: 14.5px; }
   .parada small { display: block; color: var(--texto-2); font-size: 12.5px; }
   .parada.bloq b { color: var(--texto-2); }
+  .ic-cidade { display: flex; }
+  .ic-cidade svg { width: 100%; height: auto; }
+  .parada .ic-cidade { width: 36px; margin-top: -4px; }
+  .parada.bloq .ic-cidade { filter: grayscale(1); opacity: .4; }
+  .festa .ic-cidade { width: 96px; }
+  .card .ic-cidade.jornada { width: 52px; margin-left: auto; flex: none; }
   .conqs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .conq { background: #fff; border-radius: 8px; padding: 12px; display: grid; gap: 3px; border: 1px solid var(--borda); }
   .conq .ic { font-size: 22px; line-height: 1; }
@@ -231,6 +237,8 @@
 <script>
 /* ===================== CONTEÚDO ===================== */
 const ICONES = {
+ wieliczka:'<svg viewBox="0 0 64 64"><path d="M4 58V30C4 14 16 6 32 6s28 8 28 24v28z" fill="#8a7f81"/><path d="M12 58V32c0-11 9-18 20-18s20 7 20 18v26z" fill="#d9d2c5"/><path d="M32 14v8" stroke="#5f6b76" stroke-width="2"/><path d="M24 22h16l-3 7H27z" fill="#f2c94c"/><circle cx="27" cy="32" r="1.8" fill="#fff6d6"/><circle cx="32" cy="33" r="2.2" fill="#fff6d6"/><circle cx="37" cy="32" r="1.8" fill="#fff6d6"/><path d="M15 58l6-13 6 13zM35 58l7-17 7 17z" fill="#f4f1ec" stroke="#b9c1c9" stroke-width="1.5"/><path d="M26 58l4-8 4 8z" fill="#e8ecef" stroke="#b9c1c9" stroke-width="1.5"/></svg>',
+ sopot:'<svg viewBox="0 0 64 64"><circle cx="14" cy="14" r="7" fill="#f2c94c"/><path d="M0 34h64v30H0z" fill="#3B82C4"/><path d="M2 38h48l4 4H2z" fill="#b5651d"/><path d="M8 42v12M18 42v12M28 42v12M38 42v12M48 42v12" stroke="#8c4a1c" stroke-width="2.5"/><path d="M47 38V26h8v12z" fill="#fff" stroke="#9aa3ad" stroke-width="1.5"/><path d="M45 26h12l-6-6z" fill="#DC143C"/><path d="M6 58c4-2 8 2 12 0s8 2 12 0 8 2 12 0 8 2 12 0" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" opacity=".6"/></svg>',
  warszawa:'<svg viewBox="0 0 64 64"><path d="M30 4h4v6h-4z" fill="#8c0f29"/><path d="M26 10h12l2 8H24z" fill="#9aa3ad"/><path d="M22 18h20v40H22z" fill="#b9c1c9"/><path d="M10 34h12v24H10zM42 34h12v24H42z" fill="#d3d9de"/><circle cx="32" cy="25" r="4" fill="#fff" stroke="#8c0f29" stroke-width="1.5"/><path d="M26 34h3v4h-3zM30.5 34h3v4h-3zM35 34h3v4h-3zM26 42h3v4h-3zM30.5 42h3v4h-3zM35 42h3v4h-3z" fill="#f2c94c"/><path d="M6 58h52" stroke="#8c0f29" stroke-width="3"/></svg>',
  krakow:'<svg viewBox="0 0 64 64"><path d="M8 22h12v36H8zM44 22h12v36H44z" fill="#b5651d"/><path d="M8 22l6-14 6 14zM44 22l6-14 6 14z" fill="#DC143C"/><path d="M20 30h24v28H20z" fill="#d4892a"/><path d="M20 26h4v4h-4zM28 26h4v4h-4zM36 26h4v4h-4zM40 26h4v4h-4z" fill="#d4892a"/><path d="M27 58V46a5 5 0 0 1 10 0v12z" fill="#4a2410"/><path d="M12 32h4v6h-4zM48 32h4v6h-4z" fill="#f2c94c"/></svg>',
  gdansk:'<svg viewBox="0 0 64 64"><path d="M30 8v30" stroke="#5b4636" stroke-width="3"/><path d="M33 10l16 26H33z" fill="#fff" stroke="#9aa3ad" stroke-width="1.5"/><path d="M28 14L14 36h14z" fill="#e8ecef" stroke="#9aa3ad" stroke-width="1.5"/><path d="M10 40h44l-6 10H16z" fill="#8c3b12"/><path d="M4 56c6-4 10 4 16 0s10 4 16 0 10 4 16 0 8 3 8 3" fill="none" stroke="#3B82C4" stroke-width="3" stroke-linecap="round"/></svg>',
@@ -1156,6 +1164,9 @@ const ETAPAS = [
   {xp:10000, cidade:"Kraków",   desc:"A antiga capital, com o castelo de Wawel.", pl:"zamek", pt:"o castelo"},
   {xp:12500, cidade:"Warszawa", desc:"A capital, com a cidade velha reconstruída depois da guerra. Fim da jornada!", pl:"stolica", pt:"a capital"}
 ];
+// desenho da cidade (ICONES), achado pelo nome sem acentos: Łódź → lodz
+const iconeCidade = (cidade, cls = "") => { const k = cidade.toLowerCase().replace(/ł/g, "l").normalize("NFD").replace(/[̀-ͯ]/g, "");
+  return ICONES[k] ? `<span class="ic-cidade ${cls}" aria-hidden="true">${ICONES[k]}</span>` : ""; };
 const XP_MESTRE = 3000; // depois de Varsóvia, cada 3000 XP vale uma estrela
 function infoNivel(xp) {
   xp = xp ?? (E.xp||0);
@@ -1278,7 +1289,7 @@ function renderFesta() {
   const e = L.etapa;
   f.innerHTML = `<div class="caixa" role="dialog" aria-modal="true" aria-labelledby="festa-t">
     <span class="eyebrow">Nowy poziom! Novo nível!</span>
-    <div class="selo">${L.n}</div>
+    ${L.extra ? `<div class="selo">${L.n}</div>` : iconeCidade(e.cidade)}
     <h1 id="festa-t">${esc(L.titulo)}</h1>
     <p class="sub">${L.extra ? "Você completou a jornada e segue ganhando estrelas." : esc(e.desc)}</p>
     ${liberadosNoNivel(L.n).map(id => `<div class="feedback ok" style="width:100%;text-align:left"><b>Desbloqueado: ${RECURSOS[id].ic} ${esc(RECURSOS[id].nome)}</b><br>${esc(RECURSOS[id].desc)}</div>`).join("")}
@@ -1325,7 +1336,7 @@ function cartaoJornada() {
   return `<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="eyebrow">Jornada pela Polônia</span><span class="pill">${L.xp.toLocaleString("pt-BR")} XP</span></div>
     <div style="display:flex;gap:12px;align-items:center"><div class="selo">${L.n}</div>
-      <div style="display:grid;gap:2px;min-width:0"><b style="font-size:18px">${esc(L.titulo)}</b><span class="sub" style="font-size:12.5px">Faltam ${(L.prox - L.xp).toLocaleString("pt-BR")} XP para ${esc(L.proxNome)}</span></div></div>
+      <div style="display:grid;gap:2px;min-width:0"><b style="font-size:18px">${esc(L.titulo)}</b><span class="sub" style="font-size:12.5px">Faltam ${(L.prox - L.xp).toLocaleString("pt-BR")} XP para ${esc(L.proxNome)}</span></div>${iconeCidade(L.etapa.cidade, "jornada")}</div>
     <div class="barra"><i style="width:${L.pct}%"></i></div>
     <div class="semana" aria-label="Dias estudados nesta semana">${letras.map((l,i) => { const d = somaDias(seg,i), on = (E.dias[d]||0) > 0;
       return `<div><i class="${on?"on":""} ${d===hoje()?"hoje":""}">${on?"✓":(E.diasBloqueados||{})[d]?"🧊":""}</i>${l}</div>`; }).join("")}</div>
@@ -1926,7 +1937,7 @@ function secRecompensas(sec) {
       return `${sec !== "jornada" ? "" : `${cartaoJornada()}<div class="card plano"><div style="display:flex;justify-content:space-between;align-items:center"><span class="eyebrow">Jornada pela Polônia</span><span class="pill">${L.xp.toLocaleString("pt-BR")} XP</span></div>
       <div class="trilha">${ETAPAS.map((e,i) => { const feita = L.xp >= e.xp, atual = i === L.i;
         return `<div class="parada ${feita?"feita":"bloq"} ${atual?"atual":""}"><span class="pto">${feita && !atual ? "✓" : i+1}</span>
-          <div><b>${esc(e.cidade)}</b>${atual || feita ? `<small>${esc(e.desc)}</small>` : ""}${atual && !L.extra ? `<div class="mini-barra" style="margin-top:6px"><i style="width:${L.pct}%"></i></div>` : ""}</div>
+          ${iconeCidade(e.cidade)}<div><b>${esc(e.cidade)}</b>${atual || feita ? `<small>${esc(e.desc)}</small>` : ""}${atual && !L.extra ? `<div class="mini-barra" style="margin-top:6px"><i style="width:${L.pct}%"></i></div>` : ""}</div>
           <span class="sub" style="font-size:12px;font-variant-numeric:tabular-nums">${e.xp.toLocaleString("pt-BR")} XP</span></div>`; }).join("")}</div>
       ${L.extra ? `<span class="sub" style="font-size:12.5px">Jornada completa! ${esc(L.titulo)}. Próxima estrela em ${(L.prox - L.xp).toLocaleString("pt-BR")} XP.</span>` : ""}
       </div>`}
