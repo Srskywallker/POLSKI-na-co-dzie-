@@ -170,7 +170,8 @@
   .parada .ic-cidade { width: 36px; margin-top: -4px; }
   .parada.bloq .ic-cidade { filter: grayscale(1); opacity: .4; }
   .festa .ic-cidade { width: 96px; }
-  .card .ic-cidade.jornada { width: 52px; margin-left: auto; flex: none; }
+  .ic-cidade.jornada { width: 56px; flex: none; }
+  .ic-cidade.resumo { width: 40px; flex: none; }
   .conqs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .conq { background: #fff; border-radius: 8px; padding: 12px; display: grid; gap: 3px; border: 1px solid var(--borda); }
   .conq .ic { font-size: 22px; line-height: 1; }
@@ -1335,8 +1336,8 @@ function cartaoJornada() {
   const letras = ["S","T","Q","Q","S","S","D"];
   return `<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="eyebrow">Jornada pela Polônia</span><span class="pill">${L.xp.toLocaleString("pt-BR")} XP</span></div>
-    <div style="display:flex;gap:12px;align-items:center"><div class="selo">${L.n}</div>
-      <div style="display:grid;gap:2px;min-width:0"><b style="font-size:18px">${esc(L.titulo)}</b><span class="sub" style="font-size:12.5px">Faltam ${(L.prox - L.xp).toLocaleString("pt-BR")} XP para ${esc(L.proxNome)}</span></div>${iconeCidade(L.etapa.cidade, "jornada")}</div>
+    <div style="display:flex;gap:12px;align-items:center">${L.extra ? `<div class="selo">${L.n}</div>` : iconeCidade(L.etapa.cidade, "jornada")}
+      <div style="display:grid;gap:2px;min-width:0"><b style="font-size:18px">${esc(L.titulo)}</b><span class="sub" style="font-size:12.5px">Nível ${L.n} · faltam ${(L.prox - L.xp).toLocaleString("pt-BR")} XP para ${esc(L.proxNome)}</span></div></div>
     <div class="barra"><i style="width:${L.pct}%"></i></div>
     <div class="semana" aria-label="Dias estudados nesta semana">${letras.map((l,i) => { const d = somaDias(seg,i), on = (E.dias[d]||0) > 0;
       return `<div><i class="${on?"on":""} ${d===hoje()?"hoje":""}">${on?"✓":(E.diasBloqueados||{})[d]?"🧊":""}</i>${l}</div>`; }).join("")}</div>
@@ -1650,8 +1651,8 @@ function cartaoResumo() {
   const L = infoNivel(), seg = semanaDe(hoje()), n = diasNaSemana(seg), M = semanasComMedalha();
   const ganhou = n >= META_SEMANA, it = itemColecao(ganhou ? M.total - 1 : M.total), letras = ["S","T","Q","Q","S","S","D"];
   return `<div class="card plano clicavel" data-acao="irProgresso" role="button" tabindex="0" aria-label="Ver detalhes do seu progresso">
-    <div style="display:flex;gap:10px;align-items:center"><div class="selo pequeno">${L.n}</div>
-      <div style="flex:1;min-width:0;display:grid;gap:5px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><b>${esc(L.titulo)}</b><span class="sub" style="font-size:12px;white-space:nowrap">faltam ${(L.prox - L.xp).toLocaleString("pt-BR")} XP</span></div>
+    <div style="display:flex;gap:10px;align-items:center">${L.extra ? `<div class="selo pequeno">${L.n}</div>` : iconeCidade(L.etapa.cidade, "resumo")}
+      <div style="flex:1;min-width:0;display:grid;gap:5px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><b>${esc(L.titulo)} <span class="sub" style="font-size:12px;font-weight:400">· nível ${L.n}</span></b><span class="sub" style="font-size:12px;white-space:nowrap">faltam ${(L.prox - L.xp).toLocaleString("pt-BR")} XP</span></div>
       <div class="barra"><i style="width:${L.pct}%"></i></div></div></div>
     <div class="semana" aria-label="Dias estudados nesta semana">${letras.map((l,i) => { const d = somaDias(seg,i), on = (E.dias[d]||0) > 0;
       return `<div><i class="${on?"on":""} ${d===hoje()?"hoje":""}">${on?"✓":(E.diasBloqueados||{})[d]?"🧊":""}</i>${l}</div>`; }).join("")}</div>
