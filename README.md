@@ -28,7 +28,7 @@ Os cartões usam repetição espaçada: o que você erra volta mais cedo, o que 
 | Aba | Conteúdo |
 |---|---|
 | Hoje | Lição do dia (até 12 revisões e 6 cartões novos), frase do dia, situação do dia e uma pergunta do cônsul |
-| Cartões | 642 cartões em 33 temas: frases para usar, tempo e números, e vocabulário (casa, comida, saúde, trabalho, documentos e mais) |
+| Cartões | 657 cartões em 34 temas: frases para usar, tempo e números, e vocabulário (casa, comida, saúde, trabalho, documentos, cidades da Polônia e mais). As cidades aparecem com um desenho do seu símbolo |
 | Situações | 6 conversas: na padaria, conhecendo alguém, no restaurante, pedindo informação, ao telefone e no consulado. Você escolhe o que dizer e repete em voz alta |
 | Entrevista | 19 perguntas do cônsul, com resposta modelo. Você responde falando ou escrevendo e compara com o modelo |
 | Nível | Simulado adaptado da prova oficial A2 (compreensão oral, leitura e gramática), escrita com textos modelo e fala com microfone |
