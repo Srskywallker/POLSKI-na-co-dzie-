@@ -1,2 +1,78 @@
-# POLSKI-na-co-dzie-
-App de lingua polonesa para brasileiros
+# POLSKI na co dzień
+
+App gratuito para brasileiros aprenderem o polonês do dia a dia, do zero até o nível A2, com foco na entrevista da Karta Polaka.
+
+**Abrir o app: https://srskywallker.github.io/POLSKI-na-co-dzie-/**
+
+Funciona no navegador do celular ou do computador. Não precisa instalar nada nem criar conta.
+
+<img src="docs/progresso.png" alt="Tela de progresso do app, com as conquistas de cultura pop e a Galeria histórica" width="360">
+
+## Como o app ensina
+
+Cada conteúdo passa por quatro etapas, porque ler, entender, escrever e falar a mesma frase fixa o aprendizado:
+
+| Etapa | O que você faz |
+|---|---|
+| 1 · Ler | Vê a frase em polonês e escolhe o significado |
+| 2 · Entender | Vê a frase em português e escolhe o polonês |
+| 3 · Escrever | Digita a frase em polonês (tem teclado com ą, ć, ę, ł, ń, ó, ś, ź, ż) |
+| 4 · Falar | Diz a frase no microfone e o app mostra o que entendeu |
+
+Os cartões usam repetição espaçada: o que você erra volta mais cedo, o que você acerta volta cada vez mais tarde.
+
+## O que tem no app
+
+| Aba | Conteúdo |
+|---|---|
+| Hoje | Lição do dia (até 12 revisões e 6 cartões novos), frase do dia, situação do dia e uma pergunta do cônsul |
+| Cartões | 642 cartões em 33 temas: frases para usar, tempo e números, e vocabulário (casa, comida, saúde, trabalho, documentos e mais) |
+| Situações | 6 conversas: na padaria, conhecendo alguém, no restaurante, pedindo informação, ao telefone e no consulado. Você escolhe o que dizer e repete em voz alta |
+| Entrevista | 19 perguntas do cônsul, com resposta modelo. Você responde falando ou escrevendo e compara com o modelo |
+| Nível | Simulado adaptado da prova oficial A2 (compreensão oral, leitura e gramática), escrita com textos modelo e fala com microfone |
+| Progresso | Jornada, coleção, conquistas, galeria histórica e mapa dos dias estudados |
+
+A maior parte das frases tem áudio gravado em polonês. As demais usam a voz do navegador.
+
+## Para manter o ritmo ao longo das semanas
+
+- **Jornada pela Polônia:** 11 níveis, de Wieliczka até Varsóvia. Cada atividade dá pontos (XP), e cada nível novo apresenta a cidade e uma palavra polonesa.
+- **Coleção polonesa:** cada semana com 5 dias de estudo vale uma medalha e o próximo item da coleção (pierogi, pączek, oscypek, maluch…).
+- **Conquistas:** 14 conquistas com nomes da cultura pop polonesa, de Reksio a Wiedźmin.
+- **Galeria histórica:** 14 personagens, de Mieszko I a Olga Tokarczuk, revelados conforme você soma dias de estudo.
+
+## Microfone
+
+O reconhecimento de voz é o do próprio navegador, em polonês:
+
+- Funciona no **Chrome** (computador e Android) e no **Safari** (iPhone e Mac). No Firefox não funciona.
+- Na primeira vez, o navegador pergunta se pode usar o microfone.
+- O navegador envia o áudio para transcrição: o Chrome usa os servidores do Google, e o Safari os da Apple. O app guarda só o texto reconhecido, e só durante o exercício.
+- O app perdoa a falta de acentos e pequenos erros de reconhecimento. A nota mostra se a frase foi entendida, não avalia o sotaque em detalhe.
+
+## Onde fica o seu progresso
+
+O progresso fica salvo no próprio navegador do aparelho. Ele não passa para outro aparelho ou navegador, e some se você limpar os dados do site.
+
+## Exemplos com uma persona fictícia
+
+As frases de apresentação, a entrevista e os textos modelo usam uma persona inventada: **Lucas Kovalski**, de Curitiba, com família da região de Płock. Troque pelos seus dados ao treinar.
+
+## Dar feedback
+
+Achou um erro de polonês, um problema no app ou tem uma ideia? Abra uma [issue](https://github.com/Srskywallker/POLSKI-na-co-dzie-/issues) contando o que aconteceu, em qual aparelho e em qual navegador.
+
+## Para quem quer mexer no código
+
+- O app inteiro é um único arquivo, [`index.html`](index.html), com HTML, CSS, JavaScript e os áudios embutidos. Não tem etapa de build nem dependências.
+- Para rodar localmente, abra o arquivo no navegador. Para testar o microfone, sirva a pasta por `localhost`, porque o navegador só libera o microfone em `https` ou `localhost`:
+  ```
+  python -m http.server 8000
+  ```
+  e abra http://localhost:8000.
+- O site é publicado pelo GitHub Pages a partir da branch `main`. Cada envio para a `main` atualiza o site em cerca de 1 minuto.
+
+## Fontes
+
+- Simulado e estrutura da prova: adaptados da prova de exemplo oficial do nível A2 da Państwowa Komisja do Spraw Poświadczania Znajomości Języka Polskiego jako Obcego ([certyfikatpolski.pl](https://certyfikatpolski.pl)).
+- Autoavaliação: escala oficial do Quadro Europeu Comum de Referência para Línguas (níveis A1, A2 e B1).
