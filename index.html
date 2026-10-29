@@ -1599,7 +1599,12 @@ function cartaoObjetivo() {
     <div class="objetivo"><span class="ic" aria-hidden="true">${o.ic}</span><b style="font-size:16px">${esc(o.nome)}</b></div>
     <div class="mini-barra"><i style="width:${pct}%"></i></div>
     <span class="sub" style="font-size:12.5px">${apr} de ${todosCards.length} cartões aprendidos (${pct}%) · ${especifico}${o.meta === "A2" ? ` · simulado A2: ${sims.length ? `passou em ${passou} de 2 partes` : "ainda não feito"}` : ""}</span>
-    <button class="btn sec" data-acao="${o.acao}">${esc(o.foco)}</button>
+    ${(() => { // se a seção do objetivo ainda está bloqueada, o botão leva à lição e diz quando ela chega
+      const rec = {irEntrevista:"entrevista", irSituacoes:"situacoes", irExame:"nivel"}[o.acao];
+      if (!rec || liberado(rec)) return `<button class="btn sec" data-acao="${o.acao}">${esc(o.foco)}</button>`;
+      const nv = nivelDoRecurso(rec), falta = Math.max(0, ETAPAS[nv-1].xp - (E.xp||0));
+      return `<span class="sub" style="font-size:12.5px">${RECURSOS[rec].ic} <b>${esc(RECURSOS[rec].nome)}</b> chega no nível ${nv} (${esc(ETAPAS[nv-1].cidade)}): faltam ${falta.toLocaleString("pt-BR")} XP.</span>
+        <button class="btn sec" data-acao="licao">Fazer a lição do dia</button>`; })()}
   </div>`;
 }
 function renderHoje() {
