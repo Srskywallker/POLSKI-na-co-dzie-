@@ -179,6 +179,13 @@
   .m-ok { color: var(--ok); font-weight: 700; }
   .m-no { color: var(--vinho); font-weight: 700; text-decoration: underline wavy; text-underline-offset: 3px; }
   .oculto { color: var(--texto-2); font-size: 14px; letter-spacing: 1px; }
+  .par-audio { display: inline-flex; gap: 6px; flex-shrink: 0; }
+  .lista-erros { display: grid; gap: 6px; width: 100%; text-align: left; }
+  .lista-erros div { background: #fff; border-radius: 8px; padding: 10px 12px; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+  .lista-erros b { color: var(--vermelho); }
+  .lista-erros small { display: block; color: var(--texto-2); font-size: 12.5px; }
+  .objetivo { text-align: left; display: flex; gap: 12px; align-items: center; }
+  .objetivo .ic { font-size: 26px; line-height: 1; }
 </style>
 
 <div class="app">
@@ -1054,23 +1061,42 @@ async function conectarNuvem() {
   } catch(e) {}
 }
 
+const diasEntre = (a, b) => Math.round((new Date(b+"T12:00:00") - new Date(a+"T12:00:00")) / 864e5);
 function marcarEstudo() {
   const h = hoje();
   E.dias[h] = (E.dias[h]||0) + 1;
   if (E.ultimoDia !== h) {
-    E.sequencia = (E.ultimoDia === somaDias(h,-1)) ? (E.sequencia||0) + 1 : 1;
+    const perdidos = E.ultimoDia ? diasEntre(E.ultimoDia, h) - 1 : -1;
+    if (perdidos === 0) E.sequencia = (E.sequencia||0) + 1;
+    else if (perdidos > 0 && perdidos <= (E.bloqueios||0) && E.sequencia) {
+      // bloqueios cobrem os dias sem estudo: a sequência continua, mas esses dias não somam
+      E.bloqueios -= perdidos; if (!E.diasBloqueados) E.diasBloqueados = {};
+      for (let i = 1; i <= perdidos; i++) E.diasBloqueados[somaDias(E.ultimoDia, i)] = 1;
+      E.sequencia = (E.sequencia||0) + 1;
+      avisar(`🧊 ${perdidos === 1 ? "Um bloqueio salvou" : perdidos + " bloqueios salvaram"} sua sequência!`);
+    } else E.sequencia = 1;
     E.ultimoDia = h;
     E.melhorSeq = Math.max(E.melhorSeq||0, E.sequencia);
+    if (!E.marcosVistos) E.marcosVistos = [];
+    if (MARCOS[E.sequencia] && !E.marcosVistos.includes(E.sequencia)) E.marcoPendente = E.sequencia;
   }
   const seg = semanaDe(h);
   if (!E.semBonus) E.semBonus = {};
   if (!E.semBonus[seg] && diasNaSemana(seg) >= META_SEMANA) { E.semBonus[seg] = 1; ganharXP(100);
-    const it = itemColecao(semanasComMedalha().total - 1); avisar(`Medalha da semana: ${it.ic} ${it.nome}! +100 XP`); }
+    let extra = ""; if ((E.bloqueios||0) < MAX_BLOQUEIOS) { E.bloqueios = (E.bloqueios||0) + 1; extra = " e um bloqueio 🧊"; }
+    const it = itemColecao(semanasComMedalha().total - 1); avisar(`Medalha da semana: ${it.ic} ${it.nome}! +100 XP${extra}`); }
 }
-function sequenciaAtual() { const h = hoje(); return (E.ultimoDia === h || E.ultimoDia === somaDias(h,-1)) ? (E.sequencia||0) : 0; }
+// a sequência continua viva enquanto os dias sem estudo couberem nos bloqueios guardados
+function sequenciaAtual() { if (!E.ultimoDia) return 0; return diasEntre(E.ultimoDia, hoje()) - 1 <= (E.bloqueios||0) ? (E.sequencia||0) : 0; }
 
 /* ===================== JORNADA (níveis, semana, conquistas) ===================== */
 const META_SEMANA = 5; // dias de estudo na semana para ganhar a medalha
+const MAX_BLOQUEIOS = 2; // como no Duolingo: até 2 bloqueios guardados; cada medalha da semana dá 1
+const URL_APP = "https://srskywallker.github.io/POLSKI-na-co-dzie-/";
+const MARCOS = { // marcos da sequência comemorados com tela própria
+  7: ["Tydzień!", "Uma semana"], 14: ["Dwa tygodnie!", "Duas semanas"], 30: ["Miesiąc!", "Um mês"],
+  50: ["Pięćdziesiąt dni!", "Cinquenta dias"], 100: ["Sto dni!", "Cem dias"], 200: ["Dwieście dni!", "Duzentos dias"], 365: ["Rok!", "Um ano"]
+};
 const ETAPAS = [
   {xp:0,     cidade:"Wieliczka", desc:"A mina de sal, com uma capela inteira esculpida no sal. A viagem começa aqui.", pl:"sól", pt:"o sal"},
   {xp:300,   cidade:"Sopot",    desc:"O molo, o píer de madeira mais longo da Europa.", pl:"molo", pt:"o píer"},
@@ -1178,6 +1204,8 @@ function primeiraVezHoje(k) { const h = hoje(); if (!E.feitos || E.feitos.dia !=
 /* quem já usava o app começa com os pontos do que já estudou, sem festa retroativa */
 function migrarJornada() {
   if (E.galVista === undefined) E.galVista = galeriaAberta().length; // sem aviso pelo que já estava aberto
+  if (E.bloqueios === undefined) E.bloqueios = 1; // todo mundo começa com um bloqueio guardado
+  if (!E.marcosVistos) E.marcosVistos = Object.keys(MARCOS).map(Number).filter(n => n <= (E.sequencia||0));
   if (E.xp !== undefined) return;
   let xp = 0;
   Object.values(E.cards).forEach(s => { xp += (s.acertos||0)*10 + (s.erros||0)*4; });
@@ -1198,7 +1226,8 @@ function avisar(txt) {
 }
 function renderFesta() {
   const f = document.getElementById("festa"), L = infoNivel();
-  if (L.n <= (E.nivelVisto||1)) { f.hidden = true; return; }
+  if (L.n <= (E.nivelVisto||1)) { renderMarco(f); return; }
+  f.dataset.tipo = "nivel";
   const e = L.etapa;
   f.innerHTML = `<div class="caixa" role="dialog" aria-modal="true" aria-labelledby="festa-t">
     <span class="eyebrow">Nowy poziom! Novo nível!</span>
@@ -1209,9 +1238,37 @@ function renderFesta() {
     <button class="btn" data-festa-ok>Dalej! Continuar</button></div>`;
   f.hidden = false;
 }
+// marco da sequência: aparece depois de uma subida de nível, se as duas acontecerem juntas
+function renderMarco(f) {
+  const m = E.marcoPendente;
+  if (!m || !MARCOS[m]) { f.hidden = true; return; }
+  const [pl, pt] = MARCOS[m];
+  f.dataset.tipo = "marco";
+  f.innerHTML = `<div class="caixa" role="dialog" aria-modal="true" aria-labelledby="festa-t">
+    <span class="eyebrow">Marco da sequência</span>
+    <div class="selo" aria-hidden="true">🔥</div>
+    <h1 id="festa-t">${m} dias seguidos!</h1>
+    <div class="nota" style="display:flex;gap:10px;align-items:center;justify-content:space-between;width:100%;text-align:left"><div><b class="pl">${esc(pl)}</b><br><span style="font-size:13px">${esc(pt)} estudando polonês.</span></div>${btnAudio(pl)}</div>
+    <p class="sub">${m === 7 ? "O hábito está se formando. Uma semana inteira!" : "Continue amanhã para manter a sequência."}</p>
+    <div class="linha-btn" style="width:100%"><button class="btn sec" data-festa-share>Compartilhar</button><button class="btn" data-festa-ok>Dalej! Continuar</button></div></div>`;
+  f.hidden = false;
+}
+function compartilharMarco() {
+  const texto = `🔥 ${E.marcoPendente} dias seguidos estudando polonês no POLSKI na co dzień! ${URL_APP}`;
+  const copiar = () => { try { navigator.clipboard.writeText(texto).then(() => avisar("Texto copiado. É só colar onde quiser."), () => avisar("Não consegui copiar aqui.")); } catch(e) { avisar("Não consegui copiar aqui."); } };
+  if (navigator.share) navigator.share({text: texto}).catch(e => { if (e && e.name !== "AbortError") copiar(); });
+  else copiar();
+}
 document.getElementById("festa").addEventListener("click", e => {
+  const lento = e.target.closest("[data-falar-lento]"); if (lento) { falar(lento.dataset.falarLento, true); return; }
   const a = e.target.closest("[data-falar]"); if (a) { falar(a.dataset.falar); return; }
-  if (e.target.closest("[data-festa-ok]")) { E.nivelVisto = infoNivel().n; salvar(); renderFesta(); }
+  const f = document.getElementById("festa");
+  if (e.target.closest("[data-festa-share]")) { compartilharMarco(); return; }
+  if (e.target.closest("[data-festa-ok]")) {
+    if (f.dataset.tipo === "marco") { if (!E.marcosVistos) E.marcosVistos = []; E.marcosVistos.push(E.marcoPendente); delete E.marcoPendente; }
+    else E.nivelVisto = infoNivel().n;
+    salvar(); renderFesta();
+  }
 });
 
 function cartaoJornada() {
@@ -1223,10 +1280,12 @@ function cartaoJornada() {
       <div style="display:grid;gap:2px;min-width:0"><b style="font-size:18px">${esc(L.titulo)}</b><span class="sub" style="font-size:12.5px">Faltam ${(L.prox - L.xp).toLocaleString("pt-BR")} XP para ${esc(L.proxNome)}</span></div></div>
     <div class="barra"><i style="width:${L.pct}%"></i></div>
     <div class="semana" aria-label="Dias estudados nesta semana">${letras.map((l,i) => { const d = somaDias(seg,i), on = (E.dias[d]||0) > 0;
-      return `<div><i class="${on?"on":""} ${d===hoje()?"hoje":""}">${on?"✓":""}</i>${l}</div>`; }).join("")}</div>
+      return `<div><i class="${on?"on":""} ${d===hoje()?"hoje":""}">${on?"✓":(E.diasBloqueados||{})[d]?"🧊":""}</i>${l}</div>`; }).join("")}</div>
     ${(() => { const M = semanasComMedalha(), ganhou = n >= META_SEMANA, it = itemColecao(ganhou ? M.total - 1 : M.total);
       return `<div style="display:flex;gap:10px;align-items:center"><span style="font-size:26px;line-height:1;${ganhou?"":"filter:grayscale(1);opacity:.45"}" aria-hidden="true">${it.ic}</span>
       <span class="sub" style="font-size:12.5px">${ganhou ? `Medalha da semana conquistada: <b>${esc(it.nome)}</b> entrou na sua coleção.` : `${n} de ${META_SEMANA} dias nesta semana. Chegando a ${META_SEMANA}, você ganha <b>${esc(it.nome)}</b> para a coleção e +100 XP.`}</span></div>`; })()}
+    <div style="display:flex;gap:10px;align-items:center"><span style="font-size:22px;line-height:1" aria-hidden="true">🧊</span>
+      <span class="sub" style="font-size:12.5px"><b>${E.bloqueios||0} de ${MAX_BLOQUEIOS} bloqueios.</b> Cada bloqueio salva a sequência num dia sem estudo. A medalha da semana dá mais um.</span></div>
   </div>`;
 }
 
@@ -1284,13 +1343,16 @@ function acharVoz() { try { const vs = speechSynthesis.getVoices(); vozPL = vs.f
 try { acharVoz(); speechSynthesis.onvoiceschanged = () => { acharVoz(); render(); }; } catch(e) {}
 function chaveAudio(t){ if (AUDIOS[t]) return t; const n=t.trim(); return AUDIOS[n] ? n : null; }
 let tocando = null;
-function falar(txt) {
+function falar(txt, lento) {
   const k = chaveAudio(txt);
-  if (k) { try { speechSynthesis.cancel(); } catch(e) {} try { if (tocando) tocando.pause(); tocando = new Audio("data:audio/mpeg;base64," + AUDIOS[k]); tocando.play().catch(()=>{}); return; } catch(e) {} }
-  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(txt.replace(/…/g,"")); u.lang = "pl-PL"; if (vozPL) u.voice = vozPL; u.rate = 0.85; speechSynthesis.speak(u); } catch(e) {}
+  if (k) { try { speechSynthesis.cancel(); } catch(e) {} try { if (tocando) tocando.pause(); tocando = new Audio("data:audio/mpeg;base64," + AUDIOS[k]); tocando.playbackRate = lento ? 0.7 : 1; tocando.play().catch(()=>{}); return; } catch(e) {} }
+  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(txt.replace(/…/g,"")); u.lang = "pl-PL"; if (vozPL) u.voice = vozPL; u.rate = lento ? 0.55 : 0.85; speechSynthesis.speak(u); } catch(e) {}
 }
 const ICONE_AUDIO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>';
 const btnAudio = txt => (chaveAudio(txt) || vozPL) ? `<button class="audio" data-falar="${esc(txt)}" aria-label="Ouvir em polonês">${ICONE_AUDIO}</button>` : "";
+const ICONE_LENTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15c0-4 3.6-7 8-7s8 3 8 7z"/><path d="M19 13h1.5a1.5 1.5 0 0 0 0-3H19"/><path d="M6 15v3M16 15v3M9 8.5 11 15M13 8.5 11 15"/></svg>';
+const btnLento = txt => (chaveAudio(txt) || vozPL) ? `<button class="audio" data-falar-lento="${esc(txt)}" aria-label="Ouvir devagar" title="Ouvir devagar">${ICONE_LENTO}</button>` : "";
+const btnsAudio = txt => `<span class="par-audio">${btnAudio(txt)}${btnLento(txt)}</span>`;
 
 /* ===================== VOZ (reconhecimento de fala do navegador) ===================== */
 const Reconhecedor = window.SpeechRecognition || window.webkitSpeechRecognition || null;
@@ -1319,6 +1381,11 @@ function compararFala(dito, esperado) {
   return { score: m ? Math.round(ok.filter(Boolean).length / m * 100) : 0, marcas: orig.map((w, k) => ({w, ok: ok[k]})) };
 }
 function renderMantendo() { const y = main.scrollTop; render(); main.scrollTop = y; }
+function irAba(a) {
+  pararVoz(); aba = a; sessao = null; dialogo = null; entrev = null; simul = null; nvTela = null;
+  try { localStorage.setItem(LS+"-aba", aba); } catch(e) {}
+  render(); main.scrollTop = 0;
+}
 function pararVoz() { try { if (voz.rec) voz.rec.stop(); } catch(e) {} }
 function iniciarVoz(k, esperado, aoTerminar) {
   if (!Reconhecedor) return;
@@ -1389,6 +1456,7 @@ document.querySelector("nav.abas").addEventListener("click", e => {
   render(); main.scrollTop = 0;
 });
 main.addEventListener("click", e => {
+  const fl = e.target.closest("[data-falar-lento]"); if (fl) { falar(fl.dataset.falarLento, true); return; }
   const f = e.target.closest("[data-falar]"); if (f) { falar(f.dataset.falar); return; }
   const a = e.target.closest("[data-acao]"); if (a) acoes[a.dataset.acao](a.dataset);
 });
@@ -1397,6 +1465,7 @@ function render() {
   document.querySelectorAll("nav.abas button").forEach(b => b.setAttribute("aria-current", b.dataset.aba === aba ? "page" : "false"));
   document.getElementById("chama-n").textContent = sequenciaAtual();
   document.getElementById("nivel-n").textContent = infoNivel().n;
+  document.getElementById("chama").title = `Dias seguidos estudando · ${E.bloqueios||0} de ${MAX_BLOQUEIOS} bloqueios guardados`;
   renderFesta();
   if (sessao) return renderSessao();
   if (dialogo) return renderDialogo();
@@ -1410,7 +1479,40 @@ function fraseDoDia() {
   const pool = todosCards.filter(c => ["consul","apres","ajuda","cump"].includes(c.deck));
   return pool[semente(hoje()) % pool.length];
 }
+/* objetivo escolhido na primeira vez: define a meta (nível do Quadro Europeu) e o próximo passo sugerido */
+const OBJETIVOS = [
+  {id:"karta", ic:"🏛️", nome:"Entrevista da Karta Polaka", meta:"A2", desc:"Responder ao cônsul sobre você, sua família e a cultura polonesa.", foco:"Treinar a entrevista", acao:"irEntrevista"},
+  {id:"familia", ic:"👨‍👩‍👧", nome:"Falar com a família", meta:"A2", desc:"Conversar com parentes e entender a história da família.", foco:"Praticar uma situação", acao:"irSituacoes"},
+  {id:"viagem", ic:"✈️", nome:"Viajar para a Polônia", meta:"A2", desc:"Pedir comida, comprar, pegar transporte e pedir ajuda. Com B1 você se vira com folga.", foco:"Praticar uma situação", acao:"irSituacoes"},
+  {id:"cultura", ic:"📚", nome:"Curiosidade e cultura", meta:"A1", desc:"Entender o básico e conhecer a cultura polonesa.", foco:"Fazer a lição do dia", acao:"licao"}
+];
+function renderObjetivo() {
+  main.innerHTML = `<div class="tela">
+    <div><span class="eyebrow">Witaj! Bem-vindo</span><h1>Por que você quer aprender polonês?</h1>
+    <p class="sub">Com isso o app mostra a meta certa para você. Dá para mudar depois, na aba Progresso.</p></div>
+    <div class="lista">${OBJETIVOS.map(o => `<button class="item objetivo" data-acao="objetivo" data-id="${o.id}">
+      <span class="ic" aria-hidden="true">${o.ic}</span>
+      <div class="txt"><b>${esc(o.nome)}</b><small>${esc(o.desc)}</small></div><span class="pill">Meta ${o.meta}</span></button>`).join("")}</div>
+    <button class="btn sec" data-acao="objetivo" data-id="depois">Escolher depois</button>
+  </div>`;
+}
+function cartaoObjetivo() {
+  const o = OBJETIVOS.find(x => x.id === E.objetivo); if (!o) return "";
+  const apr = aprendidos(), pct = Math.round(apr / todosCards.length * 100);
+  const sims = Object.values(nvEstado().sim), passou = sims.filter(r => r.pontos/r.max >= 0.5).length;
+  const especifico = o.id === "karta" ? `${Object.values(E.ent).filter(x => x === 2).length} de ${ENTREVISTA.length} perguntas do cônsul dominadas`
+    : o.id === "cultura" ? `${Object.keys(E.dias).filter(d => E.dias[d] > 0).length} dias de estudo`
+    : `${SITUACOES.filter(s => E.sit[s.id] === s.passos.length).length} de ${SITUACOES.length} situações sem erro`;
+  return `<div class="card plano">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="eyebrow">Seu objetivo</span><span class="pill">Meta ${o.meta}</span></div>
+    <div class="objetivo"><span class="ic" aria-hidden="true">${o.ic}</span><b style="font-size:16px">${esc(o.nome)}</b></div>
+    <div class="mini-barra"><i style="width:${pct}%"></i></div>
+    <span class="sub" style="font-size:12.5px">${apr} de ${todosCards.length} cartões aprendidos (${pct}%) · ${especifico}${o.meta === "A2" ? ` · simulado A2: ${sims.length ? `passou em ${passou} de 2 partes` : "ainda não feito"}` : ""}</span>
+    <button class="btn sec" data-acao="${o.acao}">${esc(o.foco)}</button>
+  </div>`;
+}
 function renderHoje() {
+  if (!E.objetivo) return renderObjetivo();
   const v = vencidos().length, n = Math.max(0, Math.min(NOVOS_POR_DIA - novosHoje(), novos().length));
   const totalLicao = Math.min(v, REVISOES_POR_DIA) + n;
   const f = fraseDoDia();
@@ -1421,8 +1523,9 @@ function renderHoje() {
     <div><span class="eyebrow">${new Date().toLocaleDateString("pt-BR",{weekday:"long", day:"numeric", month:"long"})}</span>
     <h1>${estudouHoje ? "Bom trabalho hoje!" : "Dzień dobry!"}</h1></div>
     ${cartaoJornada()}
+    ${cartaoObjetivo()}
     <div class="destaque">
-      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><span class="eyebrow">Frase do dia</span>${btnAudio(f.pl)}</div>
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><span class="eyebrow">Frase do dia</span>${btnsAudio(f.pl)}</div>
       <div class="pl">${esc(f.pl)}</div>
       <div class="pt">${esc(f.pt)} · <i>${esc(f.pron)}</i></div>
       ${blocoVoz("dia-"+f.id, f.pl, "Repetir falando")}
@@ -1463,7 +1566,7 @@ const ETAPA = {escolhaPt: "1 · Ler", escolhaPl: "2 · Entender", digitar: "3 ·
 function montarFila(cards) { return cards.map(c => ({card:c, tipo: tipoPergunta(c)})); }
 function iniciarSessao(cards, titulo) {
   if (!cards.length) return;
-  sessao = {fila: montarFila(cards), pos: 0, virado: false, titulo, acertos: 0, total: cards.length, refeitos: 0, xp0: E.xp||0};
+  sessao = {fila: montarFila(cards), pos: 0, virado: false, titulo, acertos: 0, total: cards.length, refeitos: 0, xp0: E.xp||0, errados: []};
   voz.res = {};
   render(); main.scrollTop = 0;
 }
@@ -1476,6 +1579,10 @@ function renderSessao() {
       <p>${s.total} cartões revisados, ${s.acertos} de primeira.</p>
       ${E.xp - s.xp0 > 0 ? `<span class="pill xp-ganho">+${E.xp - s.xp0} XP</span>` : ""}
       <p class="sub">Sequência: ${sequenciaAtual()} ${sequenciaAtual()===1?"dia":"dias"} seguidos.</p>
+      ${s.errados.length ? `<h2 style="margin-top:8px">Para revisar: ${s.errados.length} ${s.errados.length === 1 ? "cartão" : "cartões"}</h2>
+        <div class="lista-erros">${s.errados.map(c => `<div><span><b>${esc(c.pl)}</b><small>${esc(c.pt)}</small></span>${btnsAudio(c.pl)}</div>`).join("")}</div>
+        <button class="btn sec" data-acao="treinarErrados" style="width:100%">Treinar estes agora</button>`
+      : `<p class="sub">Nenhum erro nesta sessão. Ótimo!</p>`}
       <button class="btn" data-acao="sair" style="width:100%">Voltar</button></div></div>`;
     return;
   }
@@ -1506,18 +1613,21 @@ function renderSessao() {
     <div class="flash">
       <div class="dica"><b style="color:var(--vermelho)">${ETAPA[tipo]}</b> · ${mostraPl ? "O que significa?" : tipo === "falar" ? "Diga em polonês" : "Como se diz em polonês?"}${dif ? ` · <span class="dif dif-${dif}">${dif}</span>` : ""}</div>
       <div class="frente ${mostraPl?"pl":""}">${esc(mostraPl ? card.pl : card.pt)}</div>
-      ${mostraPl ? `<div style="display:flex;justify-content:center">${btnAudio(card.pl)}</div>` : ""}
+      ${mostraPl ? `<div style="display:flex;justify-content:center">${btnsAudio(card.pl)}</div>` : ""}
     </div>
     ${corpo}
     ${r ? `<div class="feedback ${r.ok?"ok":"no"}">${r.ok ? (r.aviso ? esc(r.aviso) : "Certo!") : "Resposta certa:"}${r.voz ? entendeuVoz(r.voz) : ""}
         <div style="margin-top:6px;display:flex;gap:10px;align-items:center;justify-content:space-between">
-          <div><b class="pl">${esc(card.pl)}</b><br><span class="pron">${esc(card.pron)}</span> · <span>${esc(card.pt)}</span></div>${btnAudio(card.pl)}
+          <div><b class="pl">${esc(card.pl)}</b><br><span class="pron">${esc(card.pron)}</span> · <span>${esc(card.pt)}</span></div>${btnsAudio(card.pl)}
         </div>
         ${card.nota ? `<div class="nota" style="margin-top:8px">${esc(card.nota)}</div>` : ""}
       </div>
       ${tipo !== "falar" || !r.ok ? blocoVoz("rep-"+card.id, card.pl, "Repetir falando") : ""}
       <button class="btn" data-acao="proximo">${r.ok ? "Próximo" : "Entendi, próximo"}</button>` : ""}
-    <button class="btn sec" data-acao="sair">Sair</button>
+    ${s.confirmarSaida ? `<div class="conf"><b>Não desista! Faltam ${s.fila.length - s.pos} cartões.</b>
+        <span class="sub">Se sair agora, o que você já respondeu fica salvo.</span>
+        <div class="linha-btn"><button class="btn sec" data-acao="sair">Sair mesmo assim</button><button class="btn" data-acao="ficar">Continuar</button></div></div>`
+      : `<button class="btn sec" data-acao="sairSessao">Sair</button>`}
   </div>`;
   const campo = main.querySelector("input.campo");
   if (campo && !r) {
@@ -1534,7 +1644,10 @@ function registrar(acertou, extra) {
     item.contou = true; avaliar(item.card, acertou);
     if (acertou && !item.refeito) s.acertos++;
   }
-  if (!acertou && !item.refeito) s.fila.push({card:item.card, tipo:"escolhaPt", refeito:true, contou:true});
+  if (!acertou && !item.refeito) {
+    s.fila.push({card:item.card, tipo:"escolhaPt", refeito:true, contou:true});
+    if (!s.errados.includes(item.card)) s.errados.push(item.card); // resumo do fim da sessão
+  }
   render();
 }
 
@@ -1581,7 +1694,7 @@ function renderDialogo() {
   let html = `<div class="tela"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><span class="eyebrow">${esc(s.pl)}</span><h1 style="font-size:20px">${esc(s.titulo)}</h1></div><span class="pill">${Math.min(d.passo+1, s.passos.length)}/${s.passos.length}</span></div><div class="chat">`;
   d.historico.forEach(h => {
     if (h.ctx) html += `<div class="contexto">${esc(h.ctx)}</div>`;
-    if (h.npc) html += `<div class="bolha eles"><div class="topo-b"><b class="pl">${esc(h.npc[0])}</b>${btnAudio(h.npc[0])}</div><span class="pt-b">${esc(h.npc[1])}</span></div>`;
+    if (h.npc) html += `<div class="bolha eles"><div class="topo-b"><b class="pl">${esc(h.npc[0])}</b>${btnsAudio(h.npc[0])}</div><span class="pt-b">${esc(h.npc[1])}</span></div>`;
     if (h.eu) html += `<div class="bolha eu"><b>${esc(h.eu[0])}</b><span class="pt-b">${esc(h.eu[1])}</span></div>`;
   });
   html += `</div>`;
@@ -1648,7 +1761,7 @@ function renderEntrevista() {
   main.innerHTML = `<div class="tela">
     <div style="display:flex;justify-content:space-between;align-items:center"><span class="eyebrow">Pergunta ${t.pos+1} de ${t.fila.length}</span><button class="btn sec" style="min-height:0;padding:6px 12px;font-size:13px" data-acao="sair">Sair</button></div>
     <div class="destaque">
-      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><span class="eyebrow">Konsul</span>${btnAudio(q[0])}</div>
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><span class="eyebrow">Konsul</span>${btnsAudio(q[0])}</div>
       <div class="pl">${esc(q[0])}</div>
       <div class="pt">${t.mostrarPt ? esc(q[1]) : `<button class="btn claro" style="min-height:0;padding:5px 10px;font-size:12px" data-acao="verPt">Ver tradução</button>`}</div>
     </div>
@@ -1731,6 +1844,10 @@ function renderProgresso() {
     <div class="card plano"><span class="eyebrow">Situações</span>
       ${SITUACOES.map(s => `<div style="display:flex;justify-content:space-between;font-size:13.5px"><span>${esc(s.titulo)}</span><span class="pill ${E.sit[s.id]===s.passos.length?"ok":""}">${E.sit[s.id]!==undefined?E.sit[s.id]+"/"+s.passos.length:"—"}</span></div>`).join("")}
     </div>
+    ${(() => { const o = OBJETIVOS.find(x => x.id === E.objetivo);
+      return `<div class="card plano"><span class="eyebrow">Seu objetivo</span>
+        <span class="sub">${o ? `${o.ic} ${esc(o.nome)} · meta ${o.meta}` : "Nenhum objetivo escolhido."}</span>
+        <button class="btn sec" data-acao="mudarObjetivo">${o ? "Mudar objetivo" : "Escolher objetivo"}</button></div>`; })()}
     <p class="aviso-salvo">${fonte === "nuvem" ? "Progresso salvo na sua conta: aparece em qualquer aparelho." : "Progresso salvo neste aparelho."}</p>
     ${E._confirmarReset ? `<div class="conf"><b>Apagar todo o progresso?</b><span class="sub">Isso não pode ser desfeito.</span>
       <div class="linha-btn"><button class="btn sec" data-acao="cancelarReset">Cancelar</button><button class="btn" data-acao="reset">Apagar</button></div></div>`
@@ -1763,6 +1880,14 @@ const acoes = {
     iniciarSessao(lista.slice(0, 12), "Os que você mais erra");
   },
   sair() { pararVoz(); sessao = null; dialogo = null; entrev = null; render(); main.scrollTop = 0; },
+  // no meio da sessão, pede confirmação com incentivo antes de sair
+  sairSessao() { if (sessao && sessao.pos > 0 && sessao.pos < sessao.fila.length) { sessao.confirmarSaida = true; renderMantendo(); main.scrollTop = main.scrollHeight; } else acoes.sair(); },
+  ficar() { sessao.confirmarSaida = false; renderMantendo(); },
+  treinarErrados() { iniciarSessao(sessao.errados.slice(), "Os que você errou agora"); },
+  objetivo(ds) { E.objetivo = ds.id; salvar(); render(); main.scrollTop = 0; },
+  mudarObjetivo() { delete E.objetivo; irAba("hoje"); },
+  irEntrevista() { irAba("entrevista"); },
+  irSituacoes() { irAba("situacoes"); },
   abrirSit(ds) { voz.res = {}; const s = SITUACOES.find(x => x.id === ds.id); dialogo = {sit:s, passo:0, historico:[], acertos:0, erros:{}, xp0: E.xp||0}; aba = "situacoes"; prepararPasso(); render(); main.scrollTop = 0; },
   escolher(ds) {
     const i = +ds.i; dialogo.escolhida = i; const o = dialogo.ops[i];

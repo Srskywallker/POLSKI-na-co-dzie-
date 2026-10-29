@@ -42,6 +42,11 @@ A maior parte das frases tem áudio gravado em polonês. As demais usam a voz do
 - **Coleção polonesa:** cada semana com 5 dias de estudo vale uma medalha e o próximo item da coleção (pierogi, pączek, oscypek, maluch…).
 - **Conquistas:** 14 conquistas com nomes da cultura pop polonesa, de Reksio a Wiedźmin.
 - **Galeria histórica:** 14 personagens, de Mieszko I a Olga Tokarczuk, revelados conforme você soma dias de estudo.
+- **Bloqueios de sequência:** até 2 guardados. Cada um salva a sequência num dia sem estudo, e cada medalha da semana dá mais um.
+- **Marcos da sequência:** 7, 14, 30, 50, 100, 200 e 365 dias seguidos ganham uma comemoração, com opção de compartilhar.
+- **Objetivo:** na primeira vez, você escolhe por que está aprendendo (entrevista da Karta Polaka, família, viagem ou cultura). O app mostra a meta de nível e o próximo passo.
+
+No fim de cada sessão de cartões, o app lista os cartões em que você errou e oferece treiná-los na hora. O botão de tartaruga toca o áudio mais devagar.
 
 ## Microfone
 
