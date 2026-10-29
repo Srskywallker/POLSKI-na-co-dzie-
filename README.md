@@ -6,6 +6,8 @@ App gratuito para brasileiros aprenderem o polonês do dia a dia, do zero até o
 
 Funciona no navegador do celular ou do computador. Não precisa instalar nada nem criar conta.
 
+> **Esta é a versão de protótipo**, feita para testar as funcionalidades e coletar feedback. O app final será desenvolvido para **Android e iPhone**, com login obrigatório e o progresso de cada usuário salvo no próprio celular.
+
 <img src="docs/progresso.png" alt="Tela de progresso do app, com as conquistas de cultura pop e a Galeria histórica" width="360">
 
 ## Como o app ensina
@@ -52,7 +54,7 @@ O reconhecimento de voz é o do próprio navegador, em polonês:
 
 ## Onde fica o seu progresso
 
-O progresso fica salvo no próprio navegador do aparelho. Ele não passa para outro aparelho ou navegador, e some se você limpar os dados do site.
+Neste protótipo, o progresso fica salvo no próprio navegador do aparelho. Ele não passa para outro aparelho ou navegador, e some se você limpar os dados do site. No app final para Android e iPhone, cada usuário vai entrar com login e ter o próprio progresso salvo no celular.
 
 ## Exemplos com uma persona fictícia
 
