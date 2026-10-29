@@ -1511,6 +1511,16 @@ function blocoVoz(k, esperado, rotulo, acao) {
 const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 const embaralhar = a => { a = a.slice(); for (let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
 const semente = s => { let h = 0; for (const ch of s) h = (h*31 + ch.charCodeAt(0)) >>> 0; return h; };
+// item do dia: embaralha a lista uma vez por ciclo e anda um item por dia,
+// então dias seguidos não caem em itens vizinhos e nada se repete antes de passar por todos
+function doDia(lista, sal) {
+  const n = lista.length, dia = diasEntre("2026-01-01", hoje()), ciclo = Math.floor(dia / n);
+  let s = semente(sal + ciclo) || 1;
+  const rnd = () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; };
+  const ordem = lista.map((_, i) => i);
+  for (let i = n - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [ordem[i], ordem[j]] = [ordem[j], ordem[i]]; }
+  return lista[ordem[((dia % n) + n) % n]];
+}
 const main = document.getElementById("main");
 
 /* ===================== NAVEGAÇÃO ===================== */
@@ -1558,7 +1568,7 @@ function render() {
 /* ===================== HOJE ===================== */
 function fraseDoDia() {
   const pool = todosCards.filter(c => ["consul","apres","ajuda","cump"].includes(c.deck));
-  return pool[semente(hoje()) % pool.length];
+  return doDia(pool, "frase");
 }
 /* objetivo escolhido na primeira vez: define a meta (nível do Quadro Europeu) e o próximo passo sugerido */
 const OBJETIVOS = [
@@ -1597,8 +1607,8 @@ function renderHoje() {
   const v = vencidos().length, n = Math.max(0, Math.min(NOVOS_POR_DIA - novosHoje(), novos().length));
   const totalLicao = Math.min(v, REVISOES_POR_DIA) + n;
   const f = fraseDoDia();
-  const sit = SITUACOES[semente(hoje()+"s") % SITUACOES.length];
-  const perg = ENTREVISTA[semente(hoje()+"e") % ENTREVISTA.length];
+  const sit = doDia(SITUACOES, "situacao");
+  const perg = doDia(ENTREVISTA, "consul");
   const estudouHoje = (E.dias[hoje()]||0) > 0;
   // uma ação principal; o resto só aparece se já estiver liberado, e no máximo dois extras
   const p = proximoPasso(totalLicao, v, n, sit);
