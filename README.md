@@ -30,7 +30,7 @@ Os cartões usam repetição espaçada: o que você erra volta mais cedo, o que 
 | Hoje | Lição do dia (até 12 revisões e 6 cartões novos), frase do dia, situação do dia e uma pergunta do cônsul |
 | Cartões | 657 cartões em 34 temas: frases para usar, tempo e números, e vocabulário (casa, comida, saúde, trabalho, documentos, cidades da Polônia e mais). As cidades aparecem com um desenho do seu símbolo |
 | Situações | 6 conversas: na padaria, conhecendo alguém, no restaurante, pedindo informação, ao telefone e no consulado. Você escolhe o que dizer e repete em voz alta |
-| Entrevista | 19 perguntas do cônsul, com resposta modelo. Você responde falando ou escrevendo e compara com o modelo |
+| Entrevista | 20 perguntas do cônsul, com resposta modelo. Você responde falando ou escrevendo e compara com o modelo |
 | Nível | Simulado adaptado da prova oficial A2 (compreensão oral, leitura e gramática), escrita com textos modelo e fala com microfone |
 | Progresso | Jornada, coleção, conquistas, galeria histórica e mapa dos dias estudados |
 
@@ -76,7 +76,7 @@ Neste protótipo, o progresso fica salvo no próprio navegador do aparelho. Ele 
 
 ## Exemplos com uma persona fictícia
 
-As frases de apresentação, a entrevista e os textos modelo usam uma persona inventada: **Lucas Openchoski**, de Curitiba. A história dos antepassados é inspirada numa família real: Wincenty e Franciszek Opęchowski, da região de Ciechanów, que chegaram ao Brasil no navio Berlin em 1890. No Brasil, o sobrenome foi registrado com outra grafia.
+As frases de apresentação, a entrevista e os textos modelo usam uma persona inventada: **Lucas Openchoski**, de Curitiba. A história dos antepassados é inspirada numa família real: Wincenty e Franciszek Opęchowski, da região de Ciechanów, que chegaram ao Rio de Janeiro no navio Berlin em 1890 e foram viver na Colônia Guaporé, no Rio Grande do Sul. A grafia do sobrenome mudou, primeiro nos registros russos e depois no Brasil.
 
 Nomes e sobrenomes poloneses aparecem sempre na grafia original, com todas as letras do polonês (Józef, Stanisław, Mikołaj Kopernik, Lech Wałęsa). Troque pelos seus dados ao treinar.
 
