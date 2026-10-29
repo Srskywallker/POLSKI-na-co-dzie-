@@ -36,6 +36,19 @@ Os cartões usam repetição espaçada: o que você erra volta mais cedo, o que 
 
 A maior parte das frases tem áudio gravado em polonês. As demais usam a voz do navegador.
 
+### As seções aparecem no momento certo
+
+Para não distrair no começo, o app abre só com Hoje, Cartões e Progresso. As outras seções aparecem conforme você sobe de nível na jornada, numa ordem que depende do seu objetivo:
+
+| Seção | Karta Polaka | Família | Viagem | Cultura |
+|---|---|---|---|---|
+| Entrevista | nível 2 | nível 4 | nível 5 | nível 5 |
+| Situações | nível 3 | nível 2 | nível 2 | nível 3 |
+| Treino de fala | nível 3 | nível 3 | nível 3 | nível 4 |
+| Exame A2 | nível 4 | nível 5 | nível 5 | nível 6 |
+
+A tela Hoje mostra uma ação principal por vez: primeiro a lição do dia; depois, a atividade que mais combina com o seu objetivo. Os cartões novos também chegam primeiro dos temas ligados ao objetivo. Quem quiser tudo de uma vez pode abrir todas as seções em Progresso → Ajustes.
+
 ## Para manter o ritmo ao longo das semanas
 
 - **Jornada pela Polônia:** 11 níveis, de Wieliczka até Varsóvia. Cada atividade dá pontos (XP), e cada nível novo apresenta a cidade e uma palavra polonesa.

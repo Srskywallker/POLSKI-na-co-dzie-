@@ -129,6 +129,17 @@
   nav.abas button { border: none; background: transparent; display: grid; justify-items: center; gap: 2px; padding: 6px 2px; color: #8a7f81; font-size: 10.5px; font-weight: 700; border-radius: 8px; }
   nav.abas button svg { width: 22px; height: 22px; }
   nav.abas button[aria-current="page"] { color: var(--vermelho); background: var(--rosa); }
+  nav.abas button { position: relative; }
+  nav.abas button.novo::after { content: ""; position: absolute; top: 5px; left: calc(50% + 9px); width: 8px; height: 8px; border-radius: 50%; background: var(--vermelho); border: 2px solid #fff; }
+  .btn.branco { background: #fff; color: var(--vermelho); }
+  .selo.pequeno { width: 36px; height: 36px; font-size: 15px; }
+  .clicavel { cursor: pointer; }
+  .clicavel:hover { box-shadow: 0 1px 6px rgba(140,15,41,0.12); }
+  .novidade { border-top-color: var(--ok); }
+  .ic-item { font-size: 22px; line-height: 1; flex-shrink: 0; }
+  .seg-prog button { font-size: 12px; padding: 8px 2px; }
+  details.todos { display: grid; gap: 8px; }
+  details.todos summary { cursor: pointer; font-weight: 700; color: var(--vermelho); padding: 10px 0; list-style-position: inside; }
 
   .vazio { text-align: center; padding: 24px 12px; color: var(--texto-2); font-size: 14px; display: grid; gap: 10px; justify-items: center; }
   .aviso-salvo { font-size: 11.5px; color: var(--texto-2); text-align: center; }
@@ -209,7 +220,7 @@
     <button data-aba="cartoes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="14" height="14" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v12"/></svg>Cartões</button>
     <button data-aba="situacoes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M19 9h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1v2l-3-2"/></svg>Situações</button>
     <button data-aba="entrevista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V10l7-5 7 5v11M9 21v-6h6v6"/></svg>Entrevista</button>
-    <button data-aba="nivel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/><path d="M22 9v6"/></svg>Nível</button>
+    <button data-aba="nivel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/><path d="M22 9v6"/></svg>Exame</button>
     <button data-aba="progresso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>Progresso</button>
   </nav>
 </div>
@@ -1206,6 +1217,7 @@ function migrarJornada() {
   if (E.galVista === undefined) E.galVista = galeriaAberta().length; // sem aviso pelo que já estava aberto
   if (E.bloqueios === undefined) E.bloqueios = 1; // todo mundo começa com um bloqueio guardado
   if (!E.marcosVistos) E.marcosVistos = Object.keys(MARCOS).map(Number).filter(n => n <= (E.sequencia||0));
+  if (!E.recursosVistos) E.recursosVistos = Object.keys(RECURSOS).filter(jaUsou); // o que já usava não aparece como novidade
   if (E.xp !== undefined) return;
   let xp = 0;
   Object.values(E.cards).forEach(s => { xp += (s.acertos||0)*10 + (s.erros||0)*4; });
@@ -1234,6 +1246,7 @@ function renderFesta() {
     <div class="selo">${L.n}</div>
     <h1 id="festa-t">${esc(L.titulo)}</h1>
     <p class="sub">${L.extra ? "Você completou a jornada e segue ganhando estrelas." : esc(e.desc)}</p>
+    ${liberadosNoNivel(L.n).map(id => `<div class="feedback ok" style="width:100%;text-align:left"><b>Desbloqueado: ${RECURSOS[id].ic} ${esc(RECURSOS[id].nome)}</b><br>${esc(RECURSOS[id].desc)}</div>`).join("")}
     ${L.extra ? "" : `<div class="nota" style="display:flex;gap:10px;align-items:center;justify-content:space-between;width:100%;text-align:left"><div><b class="pl">${esc(e.pl)}</b><br><span style="font-size:13px">${esc(e.pt)}</span></div>${btnAudio(e.pl)}</div>`}
     <button class="btn" data-festa-ok>Dalej! Continuar</button></div>`;
   f.hidden = false;
@@ -1290,7 +1303,17 @@ function cartaoJornada() {
 }
 
 function vencidos() { const h = hoje(); return todosCards.filter(c => E.cards[c.id] && E.cards[c.id].due <= h); }
-function novos() { return todosCards.filter(c => !E.cards[c.id]); }
+// os cartões novos chegam primeiro dos temas que mais importam para o objetivo escolhido
+const ORDEM_DECKS = {
+  karta: ["consul", "apres", "cump", "ajuda", "familia", "religiao", "urzad", "tempo", "num"],
+  familia: ["cump", "apres", "familia", "ajuda", "sent", "religiao", "swieta", "casa", "cozinha"],
+  viagem: ["cump", "ajuda", "rest", "comp", "rua", "num", "transp", "comida", "horas"],
+  cultura: ["cump", "apres", "swieta", "religiao", "comida", "cidade", "clima"],
+  depois: ["cump", "apres", "ajuda", "rest", "comp", "rua"]
+};
+const ordemDecks = () => ORDEM_DECKS[E.objetivo] || ORDEM_DECKS.depois;
+function rankDeck(id) { const i = ordemDecks().indexOf(id); return i >= 0 ? i : 100 + DECKS.findIndex(d => d.id === id); }
+function novos() { return todosCards.filter(c => !E.cards[c.id]).sort((a, b) => rankDeck(a.deck) - rankDeck(b.deck)); }
 function aprendidos() { return todosCards.filter(c => E.cards[c.id] && E.cards[c.id].box >= 2).length; }
 function novosHoje() { return E["novos_"+hoje()] || 0; }
 
@@ -1462,7 +1485,17 @@ main.addEventListener("click", e => {
 });
 
 function render() {
-  document.querySelectorAll("nav.abas button").forEach(b => b.setAttribute("aria-current", b.dataset.aba === aba ? "page" : "false"));
+  // a aba salva pode ainda não estar liberada (ex.: objetivo mudou); o treino de fala abre por atalho mesmo antes do Exame
+  if (!liberado(aba) && !(aba === "nivel" && nvTela === "fala" && liberado("fala"))) aba = "hoje";
+  const atual = aba === "nivel" && nvTela === "fala" ? "fala" : aba;
+  if (RECURSOS[atual] && !(E.recursosVistos || []).includes(atual)) { (E.recursosVistos = E.recursosVistos || []).push(atual); salvar(); }
+  let visiveis = 0;
+  document.querySelectorAll("nav.abas button").forEach(b => {
+    const ok = liberado(b.dataset.aba); b.hidden = !ok; if (ok) visiveis++;
+    b.classList.toggle("novo", ok && !!RECURSOS[b.dataset.aba] && !(E.recursosVistos || []).includes(b.dataset.aba));
+    b.setAttribute("aria-current", b.dataset.aba === aba ? "page" : "false");
+  });
+  document.querySelector("nav.abas").style.gridTemplateColumns = `repeat(${visiveis}, 1fr)`;
   document.getElementById("chama-n").textContent = sequenciaAtual();
   document.getElementById("nivel-n").textContent = infoNivel().n;
   document.getElementById("chama").title = `Dias seguidos estudando · ${E.bloqueios||0} de ${MAX_BLOQUEIOS} bloqueios guardados`;
@@ -1519,40 +1552,88 @@ function renderHoje() {
   const sit = SITUACOES[semente(hoje()+"s") % SITUACOES.length];
   const perg = ENTREVISTA[semente(hoje()+"e") % ENTREVISTA.length];
   const estudouHoje = (E.dias[hoje()]||0) > 0;
+  // uma ação principal; o resto só aparece se já estiver liberado, e no máximo dois extras
+  const p = proximoPasso(totalLicao, v, n, sit);
+  const nov = novidade(), rn = nov && RECURSOS[nov];
+  const extras = [];
+  const ordem = E.objetivo === "karta" ? ["consul", "fala", "sit"] : ["sit", "fala", "consul"];
+  ordem.forEach(x => {
+    if (x === "sit" && liberado("situacoes") && p.acao !== "abrirSit") extras.push(`<button class="item" data-acao="abrirSit" data-id="${sit.id}">
+      <span class="ic-item" aria-hidden="true">💬</span><div class="txt"><small>Situação do dia</small><b>${esc(sit.titulo)}</b><small>${esc(sit.pl)} · ${sit.passos.length} falas</small></div>
+      ${E.sit[sit.id] !== undefined ? `<span class="pill ${E.sit[sit.id]===sit.passos.length?"ok":""}">${E.sit[sit.id]}/${sit.passos.length}</span>` : `<span class="pill">Novo</span>`}</button>`);
+    if (x === "consul" && liberado("entrevista") && p.acao !== "entrev3") extras.push(`<button class="item" data-acao="entrevUma" data-i="${ENTREVISTA.indexOf(perg)}">
+      <span class="ic-item" aria-hidden="true">🏛️</span><div class="txt"><small>Pergunta do cônsul</small><b class="pl">${esc(perg[0])}</b><small>${esc(perg[1])}</small></div></button>`);
+    if (x === "fala" && liberado("fala")) extras.push(`<button class="item" data-acao="irFala">
+      <span class="ic-item" aria-hidden="true">🎤</span><div class="txt"><small>Treino de fala</small><b>Fale em polonês com o microfone</b><small>O app ouve, mostra o que entendeu e corrige</small></div></button>`);
+  });
   main.innerHTML = `<div class="tela">
     <div><span class="eyebrow">${new Date().toLocaleDateString("pt-BR",{weekday:"long", day:"numeric", month:"long"})}</span>
     <h1>${estudouHoje ? "Bom trabalho hoje!" : "Dzień dobry!"}</h1></div>
-    ${cartaoJornada()}
-    ${cartaoObjetivo()}
+    ${rn ? `<div class="card novidade"><span class="eyebrow">Novo no seu app</span>
+      <div class="objetivo"><span class="ic" aria-hidden="true">${rn.ic}</span><div style="display:grid;gap:2px"><b style="font-size:16px">${esc(rn.nome)}</b><span class="sub" style="font-size:13px">${esc(rn.desc)}</span></div></div>
+      <button class="btn sec" data-acao="${rn.acao}">Experimentar</button></div>` : ""}
     <div class="destaque">
+      <span class="eyebrow">${esc(p.eyebrow)}</span>
+      <div class="pl">${esc(p.titulo)}</div>
+      <div class="pt">${esc(p.sub)}</div>
+      <button class="btn branco" data-acao="${p.acao}"${p.id ? ` data-id="${p.id}"` : ""}>${esc(p.botao)}</button>
+    </div>
+    ${cartaoResumo()}
+    <div class="card plano">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><span class="eyebrow">Frase do dia</span>${btnsAudio(f.pl)}</div>
-      <div class="pl">${esc(f.pl)}</div>
-      <div class="pt">${esc(f.pt)} · <i>${esc(f.pron)}</i></div>
+      <div class="pl" style="font-size:18px">${esc(f.pl)}</div>
+      <span class="sub">${esc(f.pt)} · <i>${esc(f.pron)}</i></span>
       ${blocoVoz("dia-"+f.id, f.pl, "Repetir falando")}
     </div>
-    <div class="card">
-      <span class="eyebrow">Lição do dia</span>
-      <h2>${totalLicao ? `${totalLicao} cartões · cerca de ${Math.max(3, Math.round(totalLicao*0.5))} min` : "Cartões do dia concluídos"}</h2>
-      <p class="sub">${totalLicao ? `${Math.min(v,REVISOES_POR_DIA)} para revisar e ${n} novos. As palavras que você erra voltam mais vezes.` : "Volte amanhã para as próximas revisões, ou treine uma situação abaixo."}</p>
-      ${totalLicao ? `<button class="btn" data-acao="licao">Começar</button>` : `<button class="btn sec" data-acao="extra">Estudar mais 5 cartões</button>`}
-    </div>
-    <button class="item" data-acao="irFala">
-      <span class="audio" aria-hidden="true">${ICONE_MIC}</span>
-      <div class="txt"><small>Treino de fala</small><b>Fale em polonês com o microfone</b><small>O app ouve, mostra o que entendeu e corrige</small></div>
-    </button>
-    <button class="item" data-acao="abrirSit" data-id="${sit.id}">
-      <div class="txt"><small>Situação do dia</small><b>${esc(sit.titulo)}</b><small>${esc(sit.pl)} · ${sit.passos.length} falas</small></div>
-      ${E.sit[sit.id] ? `<span class="pill ok">${E.sit[sit.id]}/${sit.passos.length}</span>` : `<span class="pill">Novo</span>`}
-    </button>
-    <div class="card plano">
-      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><span class="eyebrow">Pergunta do cônsul</span>${btnAudio(perg[0])}</div>
-      <div class="pl" style="font-size:17px">${esc(perg[0])}</div>
-      <p class="sub">${esc(perg[1])}</p>
-      <button class="btn sec" data-acao="entrevUma" data-i="${ENTREVISTA.indexOf(perg)}">Responder em voz alta</button>
-    </div>
+    ${extras.length ? `<h2 class="sub-grupo">Também hoje</h2><div class="lista">${extras.slice(0, 2).join("")}</div>` : ""}
     <p class="aviso-salvo">${fonte === "nuvem" ? "Progresso salvo na sua conta." : "Progresso salvo neste aparelho."}</p>
   </div>`;
 }
+function proximoPasso(totalLicao, v, n, sit) {
+  if (totalLicao) return {eyebrow: "Lição do dia", titulo: `${totalLicao} cartões · cerca de ${Math.max(3, Math.round(totalLicao*0.5))} min`,
+    sub: `${Math.min(v, REVISOES_POR_DIA)} para revisar e ${n} novos. O que você erra volta mais vezes.`, botao: "Começar", acao: "licao"};
+  if (E.objetivo === "karta" && liberado("entrevista") && !fezHoje("ent-"))
+    return {eyebrow: "Próximo passo", titulo: "Responder 3 perguntas do cônsul", sub: "Treine em voz alta as perguntas que você menos domina.", botao: "Começar", acao: "entrev3"};
+  if (liberado("situacoes") && !fezHoje("sit-"))
+    return {eyebrow: "Próximo passo", titulo: sit.titulo, sub: `${sit.pl} · ${sit.passos.length} falas para treinar`, botao: "Começar", acao: "abrirSit", id: sit.id};
+  return {eyebrow: "Meta de hoje cumprida", titulo: "Muito bem! 🎉", sub: "Você já fez o principal de hoje. Volte amanhã para manter a sequência.", botao: "Estudar mais 5 cartões", acao: "extra"};
+}
+function fezHoje(prefixo) { const f = E.feitos; return !!f && f.dia === hoje() && Object.keys(f.k).some(k => k.startsWith(prefixo)); }
+// resumo compacto da jornada e da semana; o detalhe fica na aba Progresso
+function cartaoResumo() {
+  const L = infoNivel(), seg = semanaDe(hoje()), n = diasNaSemana(seg), M = semanasComMedalha();
+  const ganhou = n >= META_SEMANA, it = itemColecao(ganhou ? M.total - 1 : M.total), letras = ["S","T","Q","Q","S","S","D"];
+  return `<div class="card plano clicavel" data-acao="irProgresso" role="button" tabindex="0" aria-label="Ver detalhes do seu progresso">
+    <div style="display:flex;gap:10px;align-items:center"><div class="selo pequeno">${L.n}</div>
+      <div style="flex:1;min-width:0;display:grid;gap:5px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><b>${esc(L.titulo)}</b><span class="sub" style="font-size:12px;white-space:nowrap">faltam ${(L.prox - L.xp).toLocaleString("pt-BR")} XP</span></div>
+      <div class="barra"><i style="width:${L.pct}%"></i></div></div></div>
+    <div class="semana" aria-label="Dias estudados nesta semana">${letras.map((l,i) => { const d = somaDias(seg,i), on = (E.dias[d]||0) > 0;
+      return `<div><i class="${on?"on":""} ${d===hoje()?"hoje":""}">${on?"✓":(E.diasBloqueados||{})[d]?"🧊":""}</i>${l}</div>`; }).join("")}</div>
+    <span class="sub" style="font-size:12px">${ganhou ? `Medalha da semana: ${it.ic} ${esc(it.nome)}` : `${n} de ${META_SEMANA} dias para ganhar ${it.ic} ${esc(it.nome)}`} · 🧊 ${E.bloqueios||0} ${(E.bloqueios||0) === 1 ? "bloqueio" : "bloqueios"} · Ver progresso ›</span>
+  </div>`;
+}
+
+/* ===================== DESBLOQUEIO PROGRESSIVO ===================== */
+// cada recurso aparece num nível da jornada; o objetivo antecipa o que mais importa para ele
+const RECURSOS = {
+  entrevista: {nome: "Entrevista com o cônsul", ic: "🏛️", desc: "As perguntas da entrevista da Karta Polaka, com resposta modelo.", acao: "irEntrevista", nivel: {karta: 2, familia: 4, viagem: 5, cultura: 5, depois: 4}},
+  situacoes: {nome: "Situações", ic: "💬", desc: "Conversas do dia a dia: você escolhe o que dizer e repete em voz alta.", acao: "irSituacoes", nivel: {karta: 3, familia: 2, viagem: 2, cultura: 3, depois: 3}},
+  fala: {nome: "Treino de fala", ic: "🎤", desc: "Fale em polonês: o app ouve, mostra o que entendeu e corrige.", acao: "irFala", nivel: {karta: 3, familia: 3, viagem: 3, cultura: 4, depois: 3}},
+  nivel: {nome: "Exame A2", ic: "🎓", desc: "Simulado da prova oficial, escrita e fala, para medir o seu nível.", acao: "irExame", nivel: {karta: 4, familia: 5, viagem: 5, cultura: 6, depois: 5}}
+};
+const nivelDoRecurso = id => RECURSOS[id].nivel[E.objetivo] || RECURSOS[id].nivel.depois;
+// quem já usou um recurso antes desta versão continua com ele aberto
+function jaUsou(id) {
+  const N = E.nivel || {};
+  if (id === "situacoes") return Object.keys(E.sit).length > 0;
+  if (id === "entrevista") return Object.keys(E.ent).length > 0;
+  if (id === "fala") return Object.keys(N.fala || {}).length > 0;
+  if (id === "nivel") return Object.keys(N.sim || {}).length > 0 || Object.keys(N.textos || {}).length > 0;
+  return false;
+}
+function liberado(id) { if (!RECURSOS[id]) return true; return !!E.mostrarTudo || jaUsou(id) || infoNivel().n >= nivelDoRecurso(id); }
+function novidade() { return Object.keys(RECURSOS).find(id => liberado(id) && !(E.recursosVistos || []).includes(id)); }
+function liberadosNoNivel(n) { return E.mostrarTudo ? [] : Object.keys(RECURSOS).filter(id => nivelDoRecurso(id) === n && !jaUsou(id)); }
 
 /* ===================== CARTÕES ===================== */
 function tipoPergunta(c) {
@@ -1667,14 +1748,18 @@ function renderCartoes() {
     <p class="sub">Escolha um tema para estudar. ${v ? `Você tem ${v} revisões pendentes.` : ""}</p></div>
     ${v ? `<button class="btn" data-acao="revisar">Revisar ${Math.min(v, 20)} cartões pendentes</button>` : ""}
     ${nDificeis ? `<button class="btn sec" data-acao="dificeis">Treinar os ${Math.min(nDificeis,12)} que você mais erra</button>` : ""}
-    <p class="sub" style="font-size:12.5px">Cada cartão passa por 4 etapas: <b>1 Ler</b> (escolhe o significado) → <b>2 Entender</b> (escolhe o polonês) → <b>3 Escrever</b> → <b>4 Falar</b> no microfone. Depois disso, alterna escrever e falar. Em toda resposta você pode repetir falando. Cada erro faz o cartão voltar mais cedo.</p>
-    <h2 class="sub-grupo">Frases para usar</h2>
-    <div class="lista">${DECKS.filter(d => !d.grupo).map(itemDeck).join("")}</div>
-    <h2 class="sub-grupo">Tempo, datas e números</h2>
-    <div class="lista">${DECKS.filter(d => d.grupo === "tempo").map(itemDeck).join("")}</div>
-    <h2 class="sub-grupo">Vocabulário por tema</h2>
-    <p class="sub" style="font-size:12.5px">Quando a palavra aparece no dicionário de expressões do Pleciński, a dica do cartão traz a expressão com ela.</p>
-    <div class="lista">${DECKS.filter(d => d.grupo === "vocab").map(itemDeck).join("")}</div>
+    <h2 class="sub-grupo">Recomendados para você</h2>
+    <div class="lista">${ordemDecks().slice(0, 4).map(id => DECKS.find(d => d.id === id)).filter(Boolean).map(itemDeck).join("")}</div>
+    <details class="todos"><summary>Todos os temas (${DECKS.length})</summary>
+      <p class="sub" style="font-size:12.5px">Cada cartão passa por 4 etapas: <b>1 Ler</b> (escolhe o significado) → <b>2 Entender</b> (escolhe o polonês) → <b>3 Escrever</b> → <b>4 Falar</b> no microfone. Depois disso, alterna escrever e falar. Cada erro faz o cartão voltar mais cedo.</p>
+      <h2 class="sub-grupo">Frases para usar</h2>
+      <div class="lista">${DECKS.filter(d => !d.grupo).map(itemDeck).join("")}</div>
+      <h2 class="sub-grupo">Tempo, datas e números</h2>
+      <div class="lista">${DECKS.filter(d => d.grupo === "tempo").map(itemDeck).join("")}</div>
+      <h2 class="sub-grupo">Vocabulário por tema</h2>
+      <p class="sub" style="font-size:12.5px">Quando a palavra aparece no dicionário de expressões do Pleciński, a dica do cartão traz a expressão com ela.</p>
+      <div class="lista">${DECKS.filter(d => d.grupo === "vocab").map(itemDeck).join("")}</div>
+    </details>
   </div>`;
 }
 
@@ -1787,25 +1872,29 @@ function renderEntrevista() {
 }
 
 /* ===================== PROGRESSO ===================== */
+let progSec = "resumo";
+try { progSec = localStorage.getItem(LS+"-progSec") || "resumo"; } catch(e) {}
+const SECOES_PROG = [["resumo", "Resumo"], ["jornada", "Jornada"], ["colecao", "Coleção"], ["conquistas", "Conquistas"], ["galeria", "Galeria"]];
 function renderProgresso() {
-  const dias = []; for (let i = 27; i >= 0; i--) dias.push(somaDias(hoje(), -i));
+  if (!SECOES_PROG.some(s => s[0] === progSec)) progSec = "resumo";
   const totalDias = Object.keys(E.dias).length;
+  const conteudo = progSec === "resumo" ? secResumo(totalDias) : secRecompensas(progSec);
   main.innerHTML = `<div class="tela">
     <div><span class="eyebrow">Postępy</span><h1>Seu progresso</h1></div>
-    <div class="resumo">
-      <div><b>${sequenciaAtual()}</b><span>dias seguidos</span></div>
-      <div><b>${aprendidos()}</b><span>cartões aprendidos</span></div>
-      <div><b>${totalDias}</b><span>dias estudados</span></div>
-    </div>
-    ${(() => { const L = infoNivel(), M = semanasComMedalha(), ult8 = M.lista.slice(-8);
-      return `<div class="card plano"><div style="display:flex;justify-content:space-between;align-items:center"><span class="eyebrow">Jornada pela Polônia</span><span class="pill">${L.xp.toLocaleString("pt-BR")} XP</span></div>
+    <div class="seg seg-prog" role="group" aria-label="Seções do progresso">${SECOES_PROG.map(([id, nome]) => `<button data-acao="progSec" data-id="${id}" aria-pressed="${progSec === id}">${nome}</button>`).join("")}</div>
+    ${conteudo}
+  </div>`;
+}
+function secRecompensas(sec) {
+    return `${(() => { const L = infoNivel(), M = semanasComMedalha(), ult8 = M.lista.slice(-8);
+      return `${sec !== "jornada" ? "" : `${cartaoJornada()}<div class="card plano"><div style="display:flex;justify-content:space-between;align-items:center"><span class="eyebrow">Jornada pela Polônia</span><span class="pill">${L.xp.toLocaleString("pt-BR")} XP</span></div>
       <div class="trilha">${ETAPAS.map((e,i) => { const feita = L.xp >= e.xp, atual = i === L.i;
         return `<div class="parada ${feita?"feita":"bloq"} ${atual?"atual":""}"><span class="pto">${feita && !atual ? "✓" : i+1}</span>
           <div><b>${esc(e.cidade)}</b>${atual || feita ? `<small>${esc(e.desc)}</small>` : ""}${atual && !L.extra ? `<div class="mini-barra" style="margin-top:6px"><i style="width:${L.pct}%"></i></div>` : ""}</div>
           <span class="sub" style="font-size:12px;font-variant-numeric:tabular-nums">${e.xp.toLocaleString("pt-BR")} XP</span></div>`; }).join("")}</div>
       ${L.extra ? `<span class="sub" style="font-size:12.5px">Jornada completa! ${esc(L.titulo)}. Próxima estrela em ${(L.prox - L.xp).toLocaleString("pt-BR")} XP.</span>` : ""}
-      </div>
-      <div class="card plano"><div style="display:flex;justify-content:space-between;align-items:center"><span class="eyebrow">Coleção polonesa</span><span class="pill">${Math.min(M.total, COLECAO.length)}/${COLECAO.length}</span></div>
+      </div>`}
+      ${sec !== "colecao" ? "" : `<div class="card plano"><div style="display:flex;justify-content:space-between;align-items:center"><span class="eyebrow">Coleção polonesa</span><span class="pill">${Math.min(M.total, COLECAO.length)}/${COLECAO.length}</span></div>
         <span class="sub" style="font-size:12.5px">Cada semana com ${META_SEMANA} dias de estudo (de segunda a domingo) vale uma medalha: o próximo item da coleção e +100 XP.</span>
         <div class="resumo"><div><b>${M.total}</b><span>medalhas</span></div><div><b>${M.seguidas}</b><span>semanas seguidas</span></div><div><b>${xpDaSemana()}</b><span>XP nesta semana</span></div></div>
         <div class="conqs">${COLECAO.map((it,k) => { const tem = M.total > k;
@@ -1813,13 +1902,13 @@ function renderProgresso() {
         ${M.total > COLECAO.length ? `<span class="sub" style="font-size:12px">Coleção completa! As próximas medalhas repetem os itens: você já tem ${M.total}.</span>` : ""}
         ${ult8.length ? `<span class="eyebrow" style="margin-top:4px">Últimas semanas</span><div style="display:grid;grid-template-columns:repeat(8,1fr);gap:5px">${ult8.map(w => `<div title="Semana de ${w.seg}: ${w.dias} dias" style="aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:${w.ok?16:12}px;font-weight:700;background:${w.ok?"var(--rosa)":"#ecdfe2"};color:var(--texto-2)">${w.ok ? itemColecao(w.k).ic : w.dias}</div>`).join("")}</div>
         <span class="sub" style="font-size:12px">O número mostra quantos dias você estudou nas semanas sem medalha.</span>` : ""}
-      </div>
-      <div class="card plano"><div style="display:flex;justify-content:space-between;align-items:center"><span class="eyebrow">Conquistas</span><span class="pill">${CONQUISTAS.filter(c => (E.conq||{})[c.id]).length}/${CONQUISTAS.length}</span></div>
+      </div>`}
+      ${sec !== "conquistas" ? "" : `<div class="card plano"><div style="display:flex;justify-content:space-between;align-items:center"><span class="eyebrow">Conquistas</span><span class="pill">${CONQUISTAS.filter(c => (E.conq||{})[c.id]).length}/${CONQUISTAS.length}</span></div>
         <span class="sub" style="font-size:12.5px">Cada conquista leva o nome de um ícone da cultura pop polonesa.</span>
         <div class="conqs">${CONQUISTAS.map(c => { const d = (E.conq||{})[c.id];
           return `<div class="conq ${d?"":"bloq"}"><span class="ic" aria-hidden="true">${c.ic}</span><b>${esc(c.nome)}</b><small style="font-style:italic">${esc(c.quem)}</small><small>${esc(c.desc)}</small></div>`; }).join("")}</div>
-      </div>
-      ${(() => { const nd = diasEstudados(), aberta = galeriaAberta().length;
+      </div>`}
+      ${sec !== "galeria" ? "" : (() => { const nd = diasEstudados(), aberta = galeriaAberta().length;
         return `<div class="card plano"><div style="display:flex;justify-content:space-between;align-items:center"><span class="eyebrow">Galeria histórica</span><span class="pill">${aberta}/${GALERIA.length}</span></div>
         <span class="sub" style="font-size:12.5px">Dos reis medievais aos dias de hoje. Cada personagem se revela com um número de dias de estudo. Você já tem ${nd} ${nd===1?"dia":"dias"}.</span>
         <div class="trilha">${GALERIA.map((g,i) => { const ok = nd >= g.dias;
@@ -1827,9 +1916,18 @@ function renderProgresso() {
             <div><b>${esc(g.nome)}</b><small>${esc(g.anos)}</small>${ok ? `<small>${esc(g.desc)}</small>` : ""}</div>
             <span class="sub" style="font-size:12px;font-variant-numeric:tabular-nums">${ok ? "✓" : `${g.dias} dias`}</span></div>`; }).join("")}</div>
       </div>`; })()}
-      <div class="card plano"><span class="eyebrow">Como ganhar XP</span>
+      ${sec !== "jornada" ? "" : `<div class="card plano"><span class="eyebrow">Como ganhar XP</span>
         <span class="sub" style="font-size:13px">Cartão certo: 10 · cartão errado: 4 (cada cartão conta uma vez por dia) · situação: 10 + 5 por fala certa de primeira, +10 se perfeita · pergunta do cônsul: 5 a 12 · tarefa do simulado: 15, +30 se passar · tarefa de fala: 15 · texto escrito completo: 25 · semana com ${META_SEMANA} dias de estudo: 100.</span>
-      </div>`; })()}
+      </div>`}`; })()}`;
+}
+function secResumo(totalDias) {
+  const dias = []; for (let i = 27; i >= 0; i--) dias.push(somaDias(hoje(), -i));
+  return `<div class="resumo">
+      <div><b>${sequenciaAtual()}</b><span>dias seguidos</span></div>
+      <div><b>${aprendidos()}</b><span>cartões aprendidos</span></div>
+      <div><b>${totalDias}</b><span>dias estudados</span></div>
+    </div>
+    ${cartaoObjetivo()}
     <div class="card plano"><span class="eyebrow">Últimas 4 semanas</span>
       <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px">${dias.map(d => {
         const n = E.dias[d]||0; const a = n === 0 ? "#ecdfe2" : n < 8 ? "#f3a3b3" : n < 20 ? "#E8384F" : "#DC143C";
@@ -1837,22 +1935,21 @@ function renderProgresso() {
       }).join("")}</div>
       <span class="sub" style="font-size:12px">Cada quadrado é um dia; quanto mais escuro, mais você estudou.</span>
     </div>
-    <div class="card plano"><span class="eyebrow">Por tema</span>
+    <details class="card plano todos"><summary>Progresso por tema (${DECKS.length})</summary>
       ${DECKS.map(d => { const tot=d.cards.length, apr=d.cards.filter((c,i)=>(E.cards[d.id+"-"+i]||{}).box>=2).length;
         return `<div><div style="display:flex;justify-content:space-between;font-size:13.5px"><span>${esc(d.nome)}</span><span class="sub" style="font-variant-numeric:tabular-nums">${apr}/${tot}</span></div><div class="mini-barra"><i style="width:${Math.round(apr/tot*100)}%"></i></div></div>`; }).join("")}
-    </div>
-    <div class="card plano"><span class="eyebrow">Situações</span>
+    </details>
+    ${liberado("situacoes") ? `<details class="card plano todos"><summary>Situações (${SITUACOES.length})</summary>
       ${SITUACOES.map(s => `<div style="display:flex;justify-content:space-between;font-size:13.5px"><span>${esc(s.titulo)}</span><span class="pill ${E.sit[s.id]===s.passos.length?"ok":""}">${E.sit[s.id]!==undefined?E.sit[s.id]+"/"+s.passos.length:"—"}</span></div>`).join("")}
-    </div>
-    ${(() => { const o = OBJETIVOS.find(x => x.id === E.objetivo);
-      return `<div class="card plano"><span class="eyebrow">Seu objetivo</span>
-        <span class="sub">${o ? `${o.ic} ${esc(o.nome)} · meta ${o.meta}` : "Nenhum objetivo escolhido."}</span>
-        <button class="btn sec" data-acao="mudarObjetivo">${o ? "Mudar objetivo" : "Escolher objetivo"}</button></div>`; })()}
+    </details>` : ""}
+    <div class="card plano"><span class="eyebrow">Ajustes</span>
+      <button class="btn sec" data-acao="mudarObjetivo">${OBJETIVOS.some(x => x.id === E.objetivo) ? "Mudar objetivo" : "Escolher objetivo"}</button>
+      <span class="sub" style="font-size:12.5px">${E.mostrarTudo ? "Todas as seções do app estão abertas." : "As seções do app vão aparecendo conforme você avança na jornada, para não distrair no começo."}</span>
+      <button class="btn sec" data-acao="mostrarTudo">${E.mostrarTudo ? "Voltar a liberar aos poucos" : "Mostrar todas as seções agora"}</button></div>
     <p class="aviso-salvo">${fonte === "nuvem" ? "Progresso salvo na sua conta: aparece em qualquer aparelho." : "Progresso salvo neste aparelho."}</p>
     ${E._confirmarReset ? `<div class="conf"><b>Apagar todo o progresso?</b><span class="sub">Isso não pode ser desfeito.</span>
       <div class="linha-btn"><button class="btn sec" data-acao="cancelarReset">Cancelar</button><button class="btn" data-acao="reset">Apagar</button></div></div>`
-      : `<button class="btn sec" data-acao="pedirReset">Recomeçar do zero</button>`}
-  </div>`;
+      : `<button class="btn sec" data-acao="pedirReset">Recomeçar do zero</button>`}`;
 }
 
 /* ===================== AÇÕES ===================== */
@@ -1888,6 +1985,12 @@ const acoes = {
   mudarObjetivo() { delete E.objetivo; irAba("hoje"); },
   irEntrevista() { irAba("entrevista"); },
   irSituacoes() { irAba("situacoes"); },
+  irExame() { irAba("nivel"); },
+  irProgresso() { progSec = "jornada"; irAba("progresso"); },
+  progSec(ds) { progSec = ds.id; try { localStorage.setItem(LS+"-progSec", progSec); } catch(e) {} render(); main.scrollTop = 0; },
+  mostrarTudo() { E.mostrarTudo = !E.mostrarTudo; if (E.mostrarTudo) E.recursosVistos = Object.keys(RECURSOS); salvar(); renderMantendo(); },
+  // as 3 perguntas menos dominadas (as nunca treinadas primeiro)
+  entrev3() { aba = "entrevista"; iniciarEntrevista(ENTREVISTA.map((q, i) => i).sort((a, b) => (E.ent[a] ?? -1) - (E.ent[b] ?? -1)).slice(0, 3)); },
   abrirSit(ds) { voz.res = {}; const s = SITUACOES.find(x => x.id === ds.id); dialogo = {sit:s, passo:0, historico:[], acertos:0, erros:{}, xp0: E.xp||0}; aba = "situacoes"; prepararPasso(); render(); main.scrollTop = 0; },
   escolher(ds) {
     const i = +ds.i; dialogo.escolhida = i; const o = dialogo.ops[i];
