@@ -38,12 +38,12 @@ A maior parte das frases tem áudio gravado em polonês. As demais usam a voz do
 
 ### As seções aparecem no momento certo
 
-Para não distrair no começo, o app abre só com Hoje, Cartões e Progresso. As outras seções aparecem conforme você sobe de nível na jornada, numa ordem que depende do seu objetivo:
+Para não distrair no começo, o app abre com Hoje, Cartões, Progresso e a prática principal do seu objetivo: a Entrevista para a Karta Polaka, ou as Situações para Família e Viagem. As outras seções aparecem conforme você sobe de nível na jornada:
 
 | Seção | Karta Polaka | Família | Viagem | Cultura |
 |---|---|---|---|---|
-| Entrevista | nível 2 | nível 4 | nível 5 | nível 5 |
-| Situações | nível 3 | nível 2 | nível 2 | nível 3 |
+| Entrevista | desde o início | nível 4 | nível 5 | nível 5 |
+| Situações | nível 3 | desde o início | desde o início | nível 3 |
 | Treino de fala | nível 3 | nível 3 | nível 3 | nível 4 |
 | Exame A2 | nível 4 | nível 5 | nível 5 | nível 6 |
 

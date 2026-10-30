@@ -1679,8 +1679,9 @@ function cartaoResumo() {
 /* ===================== DESBLOQUEIO PROGRESSIVO ===================== */
 // cada recurso aparece num nível da jornada; o objetivo antecipa o que mais importa para ele
 const RECURSOS = {
-  entrevista: {nome: "Entrevista com o cônsul", ic: "🏛️", desc: "As perguntas da entrevista da Karta Polaka, com resposta modelo.", acao: "irEntrevista", nivel: {karta: 2, familia: 4, viagem: 5, cultura: 5, depois: 4}},
-  situacoes: {nome: "Situações", ic: "💬", desc: "Conversas do dia a dia: você escolhe o que dizer e repete em voz alta.", acao: "irSituacoes", nivel: {karta: 3, familia: 2, viagem: 2, cultura: 3, depois: 3}},
+  // a prática principal do objetivo fica aberta desde o nível 1; o que é mais avançado chega depois
+  entrevista: {nome: "Entrevista com o cônsul", ic: "🏛️", desc: "As perguntas da entrevista da Karta Polaka, com resposta modelo.", acao: "irEntrevista", nivel: {karta: 1, familia: 4, viagem: 5, cultura: 5, depois: 4}},
+  situacoes: {nome: "Situações", ic: "💬", desc: "Conversas do dia a dia: você escolhe o que dizer e repete em voz alta.", acao: "irSituacoes", nivel: {karta: 3, familia: 1, viagem: 1, cultura: 3, depois: 3}},
   fala: {nome: "Treino de fala", ic: "🎤", desc: "Fale em polonês: o app ouve, mostra o que entendeu e corrige.", acao: "irFala", nivel: {karta: 3, familia: 3, viagem: 3, cultura: 4, depois: 3}},
   nivel: {nome: "Exame A2", ic: "🎓", desc: "Simulado da prova oficial, escrita e fala, para medir o seu nível.", acao: "irExame", nivel: {karta: 4, familia: 5, viagem: 5, cultura: 6, depois: 5}}
 };
@@ -2046,7 +2047,10 @@ const acoes = {
   sairSessao() { if (sessao && sessao.pos > 0 && sessao.pos < sessao.fila.length) { sessao.confirmarSaida = true; renderMantendo(); main.scrollTop = main.scrollHeight; } else acoes.sair(); },
   ficar() { sessao.confirmarSaida = false; renderMantendo(); },
   treinarErrados() { iniciarSessao(sessao.errados.slice(), "Os que você errou agora"); },
-  objetivo(ds) { E.objetivo = ds.id; salvar(); render(); main.scrollTop = 0; },
+  objetivo(ds) { E.objetivo = ds.id;
+    // o que o objetivo já traz aberto no nível 1 faz parte do app desde o começo: não vira "novidade"
+    if (infoNivel().n === 1) Object.keys(RECURSOS).filter(liberado).forEach(id => { if (!(E.recursosVistos = E.recursosVistos || []).includes(id)) E.recursosVistos.push(id); });
+    salvar(); render(); main.scrollTop = 0; },
   mudarObjetivo() { delete E.objetivo; irAba("hoje"); },
   irEntrevista() { irAba("entrevista"); },
   irSituacoes() { irAba("situacoes"); },
