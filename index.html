@@ -118,6 +118,29 @@
   .opcao.certa { background: var(--ok-fundo); border-color: var(--ok); }
   .opcao.errada { background: var(--erro-fundo); border-color: var(--vermelho); }
   .opcao small { display: block; font-weight: 400; color: var(--texto-2); font-size: 12.5px; margin-top: 3px; }
+  /* exercícios de blocos (montar a frase e ouvir) */
+  .resposta-blocos { min-height: 50px; display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; padding: 8px 0; border-bottom: 2px solid var(--borda); }
+  .resposta-blocos .sub { align-self: center; font-size: 13px; }
+  .banco-blocos { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 6px 0; }
+  .bloco { background: #fff; border: 1px solid var(--borda); border-bottom-width: 3px; border-radius: 10px; padding: 8px 12px; font-size: 15px; font-weight: 700; color: var(--texto); }
+  .bloco.usado { background: #ecdfe2; border-color: #ecdfe2; color: transparent; }
+  .ouvir-grande { display: flex; justify-content: center; padding: 6px 0; }
+  .ouvir-grande .audio { width: 64px; height: 64px; }
+  .ouvir-grande .audio svg { width: 30px; height: 30px; }
+  /* sequência de acertos, desafio e revisão de erros */
+  .combo { font-size: 11.5px; font-weight: 700; color: #b7791f; letter-spacing: .04em; text-transform: uppercase; }
+  .barra.ouro i { background: #e0a526; }
+  .tag-erro, .tag-desafio { font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-right: 4px; }
+  .tag-erro { background: #fdf0d8; color: #9c5d00; }
+  .tag-desafio { background: var(--rosa); color: var(--vermelho); }
+  .aviso-revisao { font-size: 13.5px; font-weight: 700; color: #9c5d00; background: #fdf0d8; padding: 8px 12px; border-radius: 8px; }
+  /* dica de tradução ao tocar numa palavra */
+  .gl { border-bottom: 1.5px dotted currentColor; position: relative; cursor: help; outline: none; }
+  .gl:hover::after, .gl:focus::after { content: attr(data-gl); position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 6px; background: #2b2b2b; color: #fff; font-size: 12.5px; font-weight: 400; line-height: 1.3; padding: 5px 9px; border-radius: 6px; white-space: nowrap; z-index: 5; font-style: normal; }
+  /* avaliar o exercício e reportar erro */
+  .fb-links { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; }
+  .fb-links button { background: none; border: 0; padding: 0; font-size: 12px; color: inherit; opacity: .8; text-decoration: underline; }
+  .fb-links .feito { text-decoration: none; opacity: 1; font-weight: 700; }
   .feedback { font-size: 13.5px; padding: 10px 12px; border-radius: 6px; }
   .feedback.ok { background: var(--ok-fundo); color: var(--ok); }
   .feedback.no { background: var(--erro-fundo); color: var(--vinho); }
@@ -1700,18 +1723,50 @@ function novidade() { return Object.keys(RECURSOS).find(id => liberado(id) && !(
 function liberadosNoNivel(n) { return E.mostrarTudo ? [] : Object.keys(RECURSOS).filter(id => nivelDoRecurso(id) === n && !jaUsou(id)); }
 
 /* ===================== CARTÕES ===================== */
+// palavras de uma frase, sem pontuação: viram os blocos dos exercícios de montar e de ouvir
+const blocosDe = t => t.replace(/[.,!?…;:„”"()]/g, " ").split(/\s+/).filter(Boolean);
+const podeMontar = c => !c.pl.includes("/") && blocosDe(c.pl).length >= 2 && blocosDe(c.pl).length <= 10;
+const temAudio = t => !!(chaveAudio(t) || vozPL);
+const semEscuta = () => (E.semEscutaAte || 0) > Date.now(); // "não posso ouvir agora" vale por 15 minutos
 function tipoPergunta(c) {
   const box = (E.cards[c.id] || {}).box || 0;
   if (box === 0) return "escolhaPt";      // 1 ler: vê o polonês, escolhe o significado
   if (box === 1) return "escolhaPl";      // 2 entender: vê o português, escolhe o polonês
-  if (box === 2 || !VOZ_OK) return "digitar"; // 3 escrever: vê o português, escreve em polonês
-  return box % 2 ? "falar" : "digitar";   // 4 falar; daí em diante alterna falar e escrever
+  const frase = podeMontar(c);
+  // 3 montar: frases passam antes pelos blocos, a partir do português ou do áudio
+  if (box === 2 && frase) return !semEscuta() && temAudio(c.pl) && semente(c.id + hoje()) % 2 ? "ouvir" : "montar";
+  if (!VOZ_OK) return "digitar";          // 3 escrever: vê o português, escreve em polonês
+  const k = frase ? box - 1 : box;        // quem passou pelos blocos chega um passo depois a escrever e falar
+  return k === 2 ? "digitar" : k % 2 ? "falar" : "digitar"; // 4 falar; daí em diante alterna falar e escrever
 }
-const ETAPA = {escolhaPt: "1 · Ler", escolhaPl: "2 · Entender", digitar: "3 · Escrever", falar: "4 · Falar"};
+const ETAPA = {escolhaPt: "1 · Ler", escolhaPl: "2 · Entender", montar: "3 · Montar", ouvir: "3 · Ouvir", digitar: "3 · Escrever", falar: "4 · Falar"};
+// blocos: as palavras da frase mais algumas do mesmo tema, para confundir
+function prepararBlocos(item) {
+  if (item.blocos) return;
+  const certas = blocosDe(item.card.pl), ja = new Set(certas.map(w => w.toLowerCase()));
+  const doTema = todosCards.filter(c => c.deck === item.card.deck && c.id !== item.card.id).flatMap(c => blocosDe(c.pl));
+  const extras = embaralhar([...new Set(doTema.filter(w => !ja.has(w.toLowerCase())))]).slice(0, Math.min(3, Math.max(2, Math.ceil(certas.length / 2))));
+  item.blocos = embaralhar(certas.concat(extras)).map((w, i) => ({i, w}));
+  item.escolhidos = [];
+}
+const blocosCertos = item => item.escolhidos.map(i => item.blocos[i].w.toLowerCase()).join(" ") === blocosDe(item.card.pl).map(w => w.toLowerCase()).join(" ");
+// dica ao tocar numa palavra polonesa: palavras curtas mais comuns, mais os cartões de uma palavra só
+const DICAS_EXTRA = {"nazywam":"chamo (nazywam się = eu me chamo)", "się":"se (reflexivo)", "jest":"é / está", "jestem":"sou / estou", "nie":"não", "i":"e", "a":"e / mas", "ale":"mas", "w":"em", "we":"em", "z":"de / com", "ze":"de / com", "na":"em / sobre", "do":"para / até", "dla":"para", "o":"sobre / às", "to":"isto / é", "czy":"(abre pergunta de sim ou não)", "mam":"tenho", "ma":"tem", "pan":"o senhor", "pani":"a senhora", "proszę":"por favor", "jak":"como", "co":"o quê", "gdzie":"onde", "ja":"eu", "ty":"você", "on":"ele", "ona":"ela", "my":"nós", "mój":"meu", "moja":"minha", "moje":"meu / minha (neutro)", "jego":"dele", "jej":"dela", "bardzo":"muito", "tak":"sim", "już":"já", "jeszcze":"ainda", "tu":"aqui", "tutaj":"aqui", "tam":"lá", "teraz":"agora", "lubię":"gosto", "chcę":"quero", "mogę":"posso", "może":"pode / talvez", "polsku":"polonês (po polsku = em polonês)", "rodzina":"família", "dobrze":"bem"};
+let DICAS = null;
+function dicaDe(w) {
+  if (!DICAS) { DICAS = new Map(); todosCards.forEach(c => { if (!c.pl.includes("/") && blocosDe(c.pl).length === 1) DICAS.set(blocosDe(c.pl)[0].toLowerCase(), c.pt.split(" / ")[0]); });
+    Object.entries(DICAS_EXTRA).forEach(([k, v]) => DICAS.set(k, v)); }
+  return DICAS.get(w.toLowerCase());
+}
+function comDicas(txt) {
+  if (blocosDe(txt).length < 2) return esc(txt); // numa palavra só, a dica entregaria a resposta
+  return txt.split(/(\s+)/).map(t => { const g = dicaDe(t.replace(/[.,!?…;:„”"()]/g, ""));
+    return g ? `<span class="gl" tabindex="0" data-gl="${esc(g)}">${esc(t)}</span>` : esc(t); }).join("");
+}
 function montarFila(cards) { return cards.map(c => ({card:c, tipo: tipoPergunta(c)})); }
 function iniciarSessao(cards, titulo) {
   if (!cards.length) return;
-  sessao = {fila: montarFila(cards), pos: 0, virado: false, titulo, acertos: 0, total: cards.length, refeitos: 0, xp0: E.xp||0, errados: []};
+  sessao = {fila: montarFila(cards), pos: 0, virado: false, titulo, acertos: 0, total: cards.length, refeitos: 0, xp0: E.xp||0, errados: [], combo: 0, melhorCombo: 0};
   voz.res = {};
   render(); main.scrollTop = 0;
 }
@@ -1722,7 +1777,7 @@ function renderSessao() {
       <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#DC143C" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
       <h1>Gotowe! Pronto!</h1>
       <p>${s.total} cartões revisados, ${s.acertos} de primeira.</p>
-      ${E.xp - s.xp0 > 0 ? `<span class="pill xp-ganho">+${E.xp - s.xp0} XP</span>` : ""}
+      <div class="resumo" style="width:100%"><div><b>${Math.round(s.acertos / s.total * 100)}%</b><span>de acerto</span></div><div><b>${s.melhorCombo || 0}</b><span>melhor sequência</span></div><div><b>+${Math.max(0, E.xp - s.xp0)}</b><span>XP</span></div></div>
       <p class="sub">Sequência: ${sequenciaAtual()} ${sequenciaAtual()===1?"dia":"dias"} seguidos.</p>
       ${s.errados.length ? `<h2 style="margin-top:8px">Para revisar: ${s.errados.length} ${s.errados.length === 1 ? "cartão" : "cartões"}</h2>
         <div class="lista-erros">${s.errados.map(c => `<div><span><b>${esc(c.pl)}</b><small>${esc(c.pt)}</small></span>${btnsAudio(c.pl)}</div>`).join("")}</div>
@@ -1746,6 +1801,12 @@ function renderSessao() {
   } else if (tipo === "falar") {
     corpo = r ? "" : `${blocoVoz("card-"+s.pos, card.pl, "Falar em polonês", "vozCard")}
       <div class="linha-btn"><button class="btn sec" data-acao="falarPular">Agora não dá: escrever</button><button class="btn sec" data-acao="naoSei">Não sei</button></div>`;
+  } else if (tipo === "montar" || tipo === "ouvir") {
+    prepararBlocos(item);
+    const usados = new Set(item.escolhidos);
+    corpo = `<div class="resposta-blocos" aria-label="Sua resposta">${item.escolhidos.map(i => `<button class="bloco" data-acao="tirarBloco" data-i="${i}" ${r?"disabled":""}>${esc(item.blocos[i].w)}</button>`).join("") || `<span class="sub">Toque nas palavras na ordem certa</span>`}</div>
+      ${r ? "" : `<div class="banco-blocos">${item.blocos.map(b => `<button class="bloco ${usados.has(b.i)?"usado":""}" data-acao="porBloco" data-i="${b.i}" ${usados.has(b.i)?"disabled":""}>${esc(b.w)}</button>`).join("")}</div>
+      <div class="linha-btn">${tipo === "ouvir" ? `<button class="btn sec" data-acao="semEscuta">Não posso ouvir agora</button>` : ""}<button class="btn sec" data-acao="naoSei">Não sei</button><button class="btn" data-acao="conferirBlocos" ${item.escolhidos.length ? "" : "disabled"}>Conferir</button></div>`}`;
   } else {
     corpo = `<div class="opcoes">${item.ops.map(o => {
       const cls = !r ? "" : (o.id === card.id ? "certa" : (o.id === r.escolha ? "errada" : ""));
@@ -1753,20 +1814,22 @@ function renderSessao() {
     }).join("")}</div>${r ? "" : `<button class="btn sec" data-acao="naoSei">Não sei</button>`}`;
   }
   main.innerHTML = `<div class="tela">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="eyebrow">${esc(s.titulo)}</span><span class="pill">${s.pos+1} / ${s.fila.length}</span></div>
-    <div class="barra"><i style="width:${pct}%"></i></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="eyebrow">${esc(s.titulo)}</span><span style="display:flex;gap:8px;align-items:center">${s.combo >= 3 ? `<span class="combo">🔥 ${s.combo} seguidos</span>` : ""}<span class="pill">${s.pos+1} / ${s.fila.length}</span></span></div>
+    <div class="barra ${s.combo >= 5 ? "ouro" : ""}"><i style="width:${pct}%"></i></div>
+    ${item.refeito && item.primeiroRefeito ? `<div class="aviso-revisao">Vamos revisar o que você errou. Agora vai!</div>` : ""}
     <div class="flash">
-      <div class="dica"><b style="color:var(--vermelho)">${ETAPA[tipo]}</b> · ${mostraPl ? "O que significa?" : tipo === "falar" ? "Diga em polonês" : "Como se diz em polonês?"}${dif ? ` · <span class="dif dif-${dif}">${dif}</span>` : ""}</div>
-      ${card.icone && ICONES[card.icone] ? `<div class="icone-card">${ICONES[card.icone]}</div>` : ""}
-      <div class="frente ${mostraPl?"pl":""}">${esc(mostraPl ? card.pl : card.pt)}</div>
+      <div class="dica">${item.refeito ? `<span class="tag-erro">Erro anterior</span>` : item.desafio ? `<span class="tag-desafio">Desafio</span>` : ""}<b style="color:var(--vermelho)">${ETAPA[tipo]}</b> · ${mostraPl ? "O que significa?" : tipo === "falar" ? "Diga em polonês" : tipo === "montar" ? "Monte em polonês" : tipo === "ouvir" ? "Toque no que você ouvir" : "Como se diz em polonês?"}${dif ? ` · <span class="dif dif-${dif}">${dif}</span>` : ""}</div>
+      ${card.icone && ICONES[card.icone] && (tipo !== "ouvir" || r) ? `<div class="icone-card">${ICONES[card.icone]}</div>` : ""}
+      ${tipo === "ouvir" ? (r ? "" : `<div class="ouvir-grande">${btnsAudio(card.pl)}</div>`) : `<div class="frente ${mostraPl?"pl":""}">${mostraPl ? comDicas(card.pl) : esc(card.pt)}</div>`}
       ${mostraPl ? `<div style="display:flex;justify-content:center">${btnsAudio(card.pl)}</div>` : ""}
     </div>
     ${corpo}
     ${r ? `<div class="feedback ${r.ok?"ok":"no"}">${r.ok ? (r.aviso ? esc(r.aviso) : "Certo!") : "Resposta certa:"}${r.voz ? entendeuVoz(r.voz) : ""}
         <div style="margin-top:6px;display:flex;gap:10px;align-items:center;justify-content:space-between">
-          <div><b class="pl">${esc(card.pl)}</b><br><span class="pron">${esc(card.pron)}</span> · <span>${esc(card.pt)}</span></div>${btnsAudio(card.pl)}
+          <div><b class="pl">${comDicas(card.pl)}</b><br><span class="pron">${esc(card.pron)}</span> · <span>${esc(card.pt)}</span></div>${btnsAudio(card.pl)}
         </div>
         ${card.nota ? `<div class="nota" style="margin-top:8px">${esc(card.nota)}</div>` : ""}
+        <div class="fb-links">${item.fb ? `<span class="feito">${esc(item.fb)}</span>` : `<button data-acao="fbFacil">Fácil demais</button><button data-acao="fbDificil">Difícil demais</button>`}<button data-acao="reportar">Reportar erro no cartão</button></div>
       </div>
       ${tipo !== "falar" || !r.ok ? blocoVoz("rep-"+card.id, card.pl, "Repetir falando") : ""}
       <button class="btn" data-acao="proximo">${r.ok ? "Próximo" : "Entendi, próximo"}</button>` : ""}
@@ -1781,6 +1844,7 @@ function renderSessao() {
     campo.addEventListener("keydown", e => { if (e.key === "Enter") acoes.conferir(); });
     setTimeout(() => campo.focus(), 30);
   }
+  if (tipo === "ouvir" && !r && !item.ouviu) { item.ouviu = true; falar(card.pl); } // o exercício de ouvir já abre tocando
   if (r && !item.audioTocado) { item.audioTocado = true; falar(card.pl); } // só uma vez: senão o microfone ouve o próprio app
 }
 function registrar(acertou, extra) {
@@ -1790,8 +1854,15 @@ function registrar(acertou, extra) {
     item.contou = true; avaliar(item.card, acertou);
     if (acertou && !item.refeito) s.acertos++;
   }
-  if (!acertou && !item.refeito) {
-    s.fila.push({card:item.card, tipo:"escolhaPt", refeito:true, contou:true});
+  if (!item.refeito) { // acertos seguidos; a cada 5, o próximo cartão já visto vira desafio (escrever)
+    s.combo = acertou ? s.combo + 1 : 0; s.melhorCombo = Math.max(s.melhorCombo, s.combo);
+    if (acertou && s.combo % 5 === 0) {
+      const prox = s.fila.find((it, j) => j > s.pos && !it.refeito && !it.desafio && ["escolhaPt", "escolhaPl", "montar", "ouvir"].includes(it.tipo) && ((E.cards[it.card.id] || {}).box || 0) >= 1);
+      if (prox) { prox.tipo = "digitar"; prox.desafio = true; avisar(`🔥 ${s.combo} seguidos! Vamos deixar um pouco mais difícil…`); }
+    }
+  }
+  if (!acertou && !item.refeito) { // o erro volta no fim da mesma sessão, no mesmo tipo de exercício
+    s.fila.push({card:item.card, tipo:item.tipo, refeito:true, contou:true, primeiroRefeito: !s.fila.some(it => it.refeito)});
     if (!s.errados.includes(item.card)) s.errados.push(item.card); // resumo do fim da sessão
   }
   render();
@@ -2033,11 +2104,35 @@ const acoes = {
   responder(ds) { const card = sessao.fila[sessao.pos].card; registrar(ds.id === card.id, {escolha: ds.id}); },
   conferir() { const card = sessao.fila[sessao.pos].card; const c = conferir(sessao.digitado||"", card.pl); if (!(sessao.digitado||"").trim()) return; registrar(c.ok, {aviso: c.aviso}); },
   naoSei() { registrar(false); },
+  porBloco(ds) { const it = sessao.fila[sessao.pos]; if (sessao.resultado || it.escolhidos.includes(+ds.i)) return; it.escolhidos.push(+ds.i); renderMantendo(); },
+  tirarBloco(ds) { const it = sessao.fila[sessao.pos]; if (sessao.resultado) return; it.escolhidos = it.escolhidos.filter(i => i !== +ds.i); renderMantendo(); },
+  conferirBlocos() { const it = sessao.fila[sessao.pos]; if (sessao.resultado || !it.escolhidos.length) return; registrar(blocosCertos(it)); },
+  semEscuta() { E.semEscutaAte = Date.now() + 15*60*1000; salvar(); pararVoz();
+    sessao.fila.forEach((it, j) => { if (j >= sessao.pos && it.tipo === "ouvir") it.tipo = "montar"; });
+    avisar("Sem exercícios de ouvir pelos próximos 15 minutos."); renderMantendo(); },
+  // avaliação do exercício: ajusta quando o cartão volta
+  fbFacil() { const it = sessao.fila[sessao.pos], st = E.cards[it.card.id];
+    if (st) { st.box = Math.min(st.box + 1, INTERVALOS.length - 1); st.due = somaDias(hoje(), INTERVALOS[st.box]); }
+    (E.avaliacoes = E.avaliacoes || []).push({id: it.card.id, v: "facil", dia: hoje()}); salvar();
+    it.fb = "Anotado: este cartão vai demorar mais para voltar."; renderMantendo(); },
+  fbDificil() { const it = sessao.fila[sessao.pos], st = E.cards[it.card.id];
+    if (st) { st.box = Math.max(0, st.box - 1); st.due = somaDias(hoje(), 1); }
+    (E.avaliacoes = E.avaliacoes || []).push({id: it.card.id, v: "dificil", dia: hoje()}); salvar();
+    it.fb = "Anotado: este cartão volta amanhã, um passo mais fácil."; renderMantendo(); },
+  // abre uma issue no GitHub já preenchida com o cartão (só o conteúdo do app, nenhum dado pessoal)
+  reportar() { const it = sessao.fila[sessao.pos], c = it.card, deck = DECKS.find(d => d.id === c.deck);
+    const corpo = `**Cartão:** ${c.pl}\n**Tradução:** ${c.pt}\n**Pronúncia:** ${c.pron}${c.nota ? `\n**Nota:** ${c.nota}` : ""}\n**Tema:** ${deck ? deck.nome : c.deck} (${c.id})\n**Exercício:** ${ETAPA[it.tipo]}\n\n**O que está errado?**\n`;
+    const url = "https://github.com/Srskywallker/POLSKI-na-co-dzie-/issues/new?title=" + encodeURIComponent("Erro no cartão: " + c.pl) + "&body=" + encodeURIComponent(corpo);
+    try { window.open(url, "_blank", "noopener"); } catch(e) {}
+    avisar("Obrigado! Descreva o problema na página que abriu."); },
   tecla(ds) { const campo = main.querySelector("input.campo"); if (!campo) return;
     const ini = campo.selectionStart ?? campo.value.length, fim = campo.selectionEnd ?? ini;
     campo.value = campo.value.slice(0, ini) + ds.l + campo.value.slice(fim); sessao.digitado = campo.value;
     campo.focus(); campo.setSelectionRange(ini+1, ini+1); },
-  proximo() { pararVoz(); voz.res = {}; sessao.pos++; sessao.resultado = null; sessao.digitado = ""; render(); main.scrollTop = 0; },
+  proximo() { pararVoz(); voz.res = {}; sessao.pos++; sessao.resultado = null; sessao.digitado = "";
+    const s = sessao; // incentivo no meio do caminho, como o mascote do Duolingo
+    if (!s.avisouMeio && s.fila.length >= 8 && s.pos === Math.floor(s.fila.length / 2)) { s.avisouMeio = true; avisar(s.combo >= 3 ? "Metade do caminho, e você está mandando bem!" : "Metade do caminho! Continue assim."); }
+    render(); main.scrollTop = 0; },
   dificeis() {
     const lista = todosCards.filter(c => (E.cards[c.id]||{}).erros > 0).sort((a,b) => dificuldade(b.id) - dificuldade(a.id) || (E.cards[b.id].erros - E.cards[a.id].erros));
     iniciarSessao(lista.slice(0, 12), "Os que você mais erra");
@@ -2407,6 +2502,17 @@ Object.assign(acoes, {
   nvFala() { nvTela = "fala"; render(); main.scrollTop = 0; },
   nvModelo(ds) { nvModeloId = ds.id || null; const y = main.scrollTop; render(); main.scrollTop = y; },
   nvFeito(ds) { const N = nvEstado(); N.fala[ds.id] = !N.fala[ds.id]; if (N.fala[ds.id]) { marcarEstudo(); if (primeiraVezHoje("fala-"+ds.id)) ganharXP(15); } salvar(); const y = main.scrollTop; render(); main.scrollTop = y; }
+});
+// atalhos de teclado nos cartões: 1 a 9 escolhem a opção ou o bloco, Enter confere ou passa para o próximo
+if (document.addEventListener) document.addEventListener("keydown", e => {
+  if (!sessao || aba === "progresso" || e.ctrlKey || e.metaKey || e.altKey || (e.target.closest && e.target.closest("input, textarea"))) return;
+  if (/^[1-9]$/.test(e.key)) {
+    const b = main.querySelectorAll(".opcoes .opcao, .banco-blocos .bloco")[+e.key - 1];
+    if (b && !b.disabled) { e.preventDefault(); b.click(); }
+  } else if (e.key === "Enter" && !(e.target.closest && e.target.closest("button"))) { // num botão focado, o Enter já clica sozinho
+    const b = main.querySelector('[data-acao="proximo"], [data-acao="conferirBlocos"]:not([disabled])');
+    if (b) { e.preventDefault(); b.click(); }
+  }
 });
 main.addEventListener("input", e => {
   const a = e.target.closest("[data-nv-in]"); if (a && simul) { simul.resp[+a.dataset.nvIn] = a.value; return; }

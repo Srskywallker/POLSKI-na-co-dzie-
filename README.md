@@ -16,12 +16,22 @@ Cada conteúdo passa por quatro etapas, porque ler, entender, escrever e falar a
 
 | Etapa | O que você faz |
 |---|---|
-| 1 · Ler | Vê a frase em polonês e escolhe o significado |
+| 1 · Ler | Vê a frase em polonês e escolhe o significado. Tocar numa palavra mostra a tradução dela |
 | 2 · Entender | Vê a frase em português e escolhe o polonês |
+| 3 · Montar ou Ouvir | Nas frases: monta o polonês com blocos de palavras, a partir do português ou do áudio |
 | 3 · Escrever | Digita a frase em polonês (tem teclado com ą, ć, ę, ł, ń, ó, ś, ź, ż) |
 | 4 · Falar | Diz a frase no microfone e o app mostra o que entendeu |
 
 Os cartões usam repetição espaçada: o que você erra volta mais cedo, o que você acerta volta cada vez mais tarde.
+
+Durante a sessão:
+
+- **O que você erra volta no fim da mesma sessão**, no mesmo tipo de exercício, marcado como "Erro anterior".
+- **A cada 5 acertos seguidos**, o próximo cartão que você já conhece vira um desafio de escrever.
+- **"Não posso ouvir agora"** troca os exercícios de ouvir por montar durante 15 minutos.
+- **Depois de cada resposta**, dá para marcar o cartão como fácil demais ou difícil demais, o que muda quando ele volta, ou reportar um erro. O reporte abre uma issue já preenchida com o cartão.
+- **Atalhos no computador:** as teclas 1 a 9 escolhem a opção ou o bloco, e Enter confere ou passa para o próximo.
+- **No fim da sessão**, o app mostra a porcentagem de acerto e a melhor sequência.
 
 ## O que tem no app
 
