@@ -37,6 +37,7 @@ Durante a sessão:
 
 | Aba | Conteúdo |
 |---|---|
+| Curso | Curso A1 em 20 lições, na ordem do curso inicial do *Polski na dobry start* (A1): gramática explicada em português, palavras com áudio, diálogo e exercícios com correção. As palavras de cada lição viram cartões |
 | Hoje | Lição do dia (até 12 revisões e 6 cartões novos), frase do dia, situação do dia e uma pergunta do cônsul |
 | Cartões | 657 cartões em 34 temas: frases para usar, tempo e números, e vocabulário (casa, comida, saúde, trabalho, documentos, cidades da Polônia e mais). As cidades aparecem com um desenho do seu símbolo |
 | Situações | 6 conversas: na padaria, conhecendo alguém, no restaurante, pedindo informação, ao telefone e no consulado. Você escolhe o que dizer e repete em voz alta |
