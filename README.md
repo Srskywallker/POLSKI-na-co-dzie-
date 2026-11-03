@@ -8,7 +8,7 @@ Funciona no navegador do celular ou do computador. Não precisa instalar nada ne
 
 > **Esta é a versão de protótipo**, feita para testar as funcionalidades e coletar feedback. O app final será desenvolvido para **Android e iPhone**, com login obrigatório e o progresso de cada usuário salvo no próprio celular.
 
-<img src="docs/progresso.png" alt="Tela de progresso do app, com as conquistas de cultura pop e a Galeria histórica" width="360">
+<img src="docs/Captura%20de%20tela%202026-11-02%20125710.png" alt="Tela de progresso do app, com a Jornada pela Polônia de Wieliczka a Łódź" width="360">
 
 ## Como o app ensina
 
