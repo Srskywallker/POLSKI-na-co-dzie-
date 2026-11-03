@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "io.github.srskywallker.polski",
+    "sha256_cert_fingerprints": ["6C:59:80:7B:7F:E7:16:2A:8E:D6:C4:C8:BA:7B:39:30:7B:B9:3D:33:F4:53:D5:7B:35:1A:56:83:17:9C:C8:30"]
+  }
+}]

@@ -2,3 +2,12 @@ ferramentas/voz/
 ferramentas/.clips/
 node_modules/
 __pycache__/
+# Chave de assinatura do Android: nunca no repositório público
+*.keystore
+*.jks
+android/app/build/
+android/build/
+android/.gradle/
+*.apk
+*.aab
+*.idsig
