@@ -97,7 +97,7 @@ Achou um erro de polonês, um problema no app ou tem uma ideia? Abra uma [issue]
 
 ## Para quem quer mexer no código
 
-- O app inteiro é um único arquivo, [`index.html`](index.html), com HTML, CSS, JavaScript e os áudios embutidos. Não tem etapa de build nem dependências.
+- O app é um site estático: [`index.html`](index.html), [`estilo.css`](estilo.css), [`dados.js`](dados.js) (conteúdo) e [`app.js`](app.js) (lógica). O áudio fica em `audio/` e é baixado só quando a frase toca. Não tem etapa de build nem dependências.
 - Para rodar localmente, abra o arquivo no navegador. Para testar o microfone, sirva a pasta por `localhost`, porque o navegador só libera o microfone em `https` ou `localhost`:
   ```
   python -m http.server 8000

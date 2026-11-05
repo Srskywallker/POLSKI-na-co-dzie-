@@ -1,4 +1,4 @@
-"""Junta as lições de conteudo/ no index.html e grava o áudio de cada lição em audio/<id>.json.
+"""Junta as lições de conteudo/ no dados.js e grava o áudio de cada lição em audio/<id>.json.
 
 Uso (na raiz do repositório):
     python ferramentas/montar.py
@@ -9,7 +9,8 @@ A voz fica em ferramentas/voz/ (veja ferramentas/README.md). Áudios já gravado
 import base64, glob, hashlib, json, os, subprocess, sys, tempfile, wave
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-INDEX = os.path.join(RAIZ, 'index.html')
+INDEX = os.path.join(RAIZ, 'dados.js')
+SW = os.path.join(RAIZ, 'sw.js')
 VOZ = os.environ.get('PIPER_VOZ', os.path.join(RAIZ, 'ferramentas', 'voz', 'pl_PL-darkman-medium.onnx'))
 CLIPS = os.path.join(RAIZ, 'ferramentas', '.clips')  # cache local, fora do git
 
@@ -19,12 +20,12 @@ ARQUIVOS = ['c-a1m-1.js', 'c-a1m-2.js', 'c-a1m-3.js', 'c-a1m-4.js', 'c-a1b.js', 
 arquivos = [os.path.join(RAIZ, 'conteudo', f) for f in (sys.argv[1:] or ARQUIVOS)]
 js = ''.join(open(f, encoding='utf-8').read() + '\n' for f in arquivos)
 
-# 1. insere o conteúdo entre os marcadores do index.html
+# 1. insere o conteúdo entre os marcadores do dados.js
 s = open(INDEX, encoding='utf-8').read()
 ini, fim = '/*CURSO_MAIS*/', '/*CURSO_MAIS_FIM*/'
 a, b = s.index(ini) + len(ini), s.index(fim)
 s = s[:a] + '\n' + js + s[b:]
-open(INDEX, 'w', encoding='utf-8').write(s)
+open(INDEX, 'w', encoding='utf-8', newline='\n').write(s)  # newline: no Windows o padrão grava CRLF
 
 # 2. extrai os textos que precisam de áudio
 tmp = tempfile.mkdtemp()
@@ -58,5 +59,15 @@ for l in licoes:
         m[t] = base64.b64encode(open(mp3, 'rb').read()).decode()
     json.dump(m, open(out, 'w', encoding='utf-8'), ensure_ascii=False)
 
-mb = sum(os.path.getsize(x) for x in glob.glob(os.path.join(RAIZ, 'audio', '*.json'))) / 1e6
-print(f'{len(licoes)} lições externas; {mb:.1f} MB de áudio; index {len(s.encode()) / 1e6:.1f} MB')
+# 4. versão do cache do PWA = hash do áudio: quem já baixou recebe o áudio novo
+audios = sorted(glob.glob(os.path.join(RAIZ, 'audio', '*.json')))
+h = hashlib.md5()
+for x in audios:
+    h.update(os.path.basename(x).encode()); h.update(open(x, 'rb').read())
+sw = open(SW, encoding='utf-8').read()
+ini = sw.index('const CACHE = "') + len('const CACHE = "')
+sw = sw[:ini] + 'polski-' + h.hexdigest()[:10] + sw[sw.index('"', ini):]
+open(SW, 'w', encoding='utf-8', newline='\n').write(sw)
+
+mb = sum(os.path.getsize(x) for x in audios) / 1e6
+print(f'{len(licoes)} lições externas; {mb:.1f} MB de áudio; dados.js {len(s.encode()) / 1e6:.1f} MB; cache polski-{h.hexdigest()[:10]}')

@@ -16,11 +16,23 @@ Publicado pelo GitHub Pages a partir da branch `main`: https://srskywallker.gith
 
 | Caminho | O que é |
 |---|---|
-| `index.html` | O app inteiro: HTML, CSS e JS num arquivo só (~11 MB). As seções do JS começam com `/* ===== NOME ===== */` |
-| `conteudo/c-*.js` | Fonte das lições do curso (A1 módulos em diante). Editar aqui, nunca direto no index |
-| `conteudo/curso-a1.js` | As 20 primeiras lições, já embutidas no index (seção `CURSO A1`). Guardado como referência |
+| `index.html` | Só o HTML da casca (cabeçalho, abas) e os `<script>`/`<link>` |
+| `estilo.css` | Todo o CSS |
+| `dados.js` | Conteúdo: temas e cartões (`DECKS`), situações, entrevista, curso. As seções começam com `/* ===== NOME ===== */` |
+| `app.js` | Lógica do app (estado, jornada, áudio, abas). Carregado depois de `dados.js`, no mesmo escopo global |
+| `conteudo/c-*.js` | Fonte das lições do curso (A1 módulos em diante). Editar aqui, nunca direto no `dados.js` |
+| `conteudo/curso-a1.js` | As 20 primeiras lições, já embutidas no `dados.js` (seção `CURSO A1`). Guardado como referência |
 | `audio/<id>.json` | Áudio de cada lição (`{texto: mp3 em base64}`), baixado só quando a lição abre |
-| `ferramentas/montar.py` | Junta `conteudo/` no index (entre `/*CURSO_MAIS*/` e `/*CURSO_MAIS_FIM*/`) e grava o áudio que falta. Ver `ferramentas/README.md` |
+| `audio/base-NN.json` | Áudio das partes antigas (temas, situações, entrevista), em pedaços de ~400 KB. `AUDIO_BASE` no `dados.js` diz em qual pedaço está cada texto |
+| `ferramentas/montar.py` | Junta `conteudo/` no `dados.js` (entre `/*CURSO_MAIS*/` e `/*CURSO_MAIS_FIM*/`), grava o áudio que falta e atualiza a versão do cache no `sw.js`. Ver `ferramentas/README.md` |
+| `sw.js`, `manifest.json`, `icones/` | PWA. Código vem da rede primeiro; áudio e ícones, do cache |
+| `android/` | App Android (TWA do Bubblewrap). A chave `android.keystore` e os `.apk`/`.aab` ficam fora do git |
+
+### Progresso salvo
+
+- Tudo fica no `localStorage` (chave `polski-na-co-dzien-v1`), no objeto `E`.
+- Id do cartão = tema + polonês normalizado (`idCard`, por exemplo `cump:dzień dobry`). Reordenar ou inserir cartões não afeta o progresso. Corrigir o polonês de um cartão zera o progresso só daquele cartão.
+- `migrarCards` converte o formato antigo (`tema-posição`, antes da v1.1) uma vez e marca `E.idsV = 2`. Não remover: ainda há quem não abriu o app depois da v1.1.
 
 ### Formato de uma lição
 
@@ -51,8 +63,6 @@ CURSO.push({nivel: "A2", parte: "Módulo 5 · Comida", fonte: "Livro de base", a
 
 ## Dívidas conhecidas
 
-- **Áudio antigo embutido:** o objeto `AUDIOS` no index tem ~11 MB de áudio das partes antigas. Dá para migrar para `audio/*.json` como as lições novas.
-- **Arquivo único:** HTML, CSS e JS estão juntos; separar em módulos facilitaria a manutenção.
-- **Id do cartão depende da posição no baralho:** mudar a ordem dos cartões embaralha o progresso salvo (localStorage) de quem já estuda. Trocar por um id estável (por exemplo, derivado do texto em polonês) com migração do progresso.
+- **Progresso só no aparelho:** `conectarNuvem` só funciona dentro do claude.ai. No site e nos apps não há login nem sincronização (plano da v2.0).
 - **Revisão de nativo:** os textos das lições não foram revisados por um falante nativo, principalmente no B1 e no B2.
 - **Plano futuro:** o README menciona uma versão para Android e iPhone com login.
